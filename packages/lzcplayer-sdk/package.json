@@ -1,0 +1,28 @@
+{
+  "name": "@lzcplayer/sdk",
+  "version": "0.1.0",
+  "description": "Electron-friendly SDK for controlling an lzcplayer native player process.",
+  "license": "UNLICENSED",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "electron",
+    "player",
+    "mpv",
+    "sdk",
+    "ipc"
+  ]
+}
