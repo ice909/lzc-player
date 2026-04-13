@@ -10,6 +10,24 @@ Item {
     width: 1280
     height: 720
     readonly property var hostWindow: Window.window
+    property bool controlsVisible: true
+    readonly property bool overlayOpen:
+        speedMenu.opened || qualityMenu.opened || subtitleMenu.opened || volumePopup.opened
+
+    function syncControlsVisibility() {
+        if (!renderer.playing || overlayOpen) {
+            controlsVisible = true
+            hideControlsTimer.stop()
+            return
+        }
+
+        hideControlsTimer.restart()
+    }
+
+    function showControlsTemporarily() {
+        controlsVisible = true
+        syncControlsVisibility()
+    }
 
     function formatTime(seconds) {
         const safe = Math.max(0, Math.floor(seconds || 0))
@@ -61,6 +79,37 @@ Item {
         }
     }
 
+    HoverHandler {
+        onHoveredChanged: {
+            if (hovered) {
+                showControlsTemporarily()
+            }
+        }
+
+        onPointChanged: showControlsTemporarily()
+    }
+
+    Timer {
+        id: hideControlsTimer
+        interval: 1800
+        repeat: false
+        onTriggered: {
+            if (renderer.playing && !overlayOpen) {
+                controlsVisible = false
+            }
+        }
+    }
+
+    Connections {
+        target: renderer
+
+        function onPlayingChanged() {
+            syncControlsVisibility()
+        }
+    }
+
+    onOverlayOpenChanged: syncControlsVisibility()
+
     Shortcut {
         sequence: "Space"
         context: Qt.ApplicationShortcut
@@ -68,13 +117,31 @@ Item {
     }
 
     Rectangle {
+        id: controlsBar
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         height: 64
+        y: controlsVisible ? parent.height - height : parent.height + 10
         color: "#D911141C"
         border.width: 1
         border.color: "#2A3144"
+        opacity: controlsVisible ? 1 : 0
+        enabled: controlsVisible
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 180
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Behavior on y {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+        }
 
         Rectangle {
             anchors.fill: parent
