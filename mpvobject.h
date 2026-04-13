@@ -13,7 +13,6 @@ class MpvRenderer;
 class MpvObject : public QQuickFramebufferObject
 {
     Q_OBJECT
-    Q_PROPERTY(double videoFps READ videoFps NOTIFY videoFpsChanged)
     Q_PROPERTY(bool playing READ isPlaying NOTIFY playingChanged)
     Q_PROPERTY(double timePos READ timePos NOTIFY timePosChanged)
     Q_PROPERTY(double duration READ duration NOTIFY durationChanged)
@@ -34,7 +33,6 @@ public:
     static void on_update(void *ctx);
     static void on_mpv_events(void *ctx);
 
-    double videoFps() const;
     bool isPlaying() const;
     double timePos() const;
     double duration() const;
@@ -57,7 +55,6 @@ public slots:
 
 signals:
     void onUpdate();
-    void videoFpsChanged();
     void playingChanged();
     void timePosChanged();
     void durationChanged();
@@ -73,7 +70,6 @@ private slots:
     void processMpvEvents();
 
 private:
-    void setVideoFps(double fps);
     void setPaused(bool paused);
     void setTimePos(double seconds);
     void setDuration(double seconds);
@@ -86,7 +82,6 @@ private:
     mpv_handle *mpv;
     mpv_render_context *mpv_gl;
     QString pendingFile;
-    double m_videoFps;
     bool m_paused;
     double m_timePos;
     double m_duration;

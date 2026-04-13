@@ -141,7 +141,6 @@ MpvObject::MpvObject(QQuickItem *parent)
     : QQuickFramebufferObject(parent)
     , mpv(mpv_create())
     , mpv_gl(nullptr)
-    , m_videoFps(0.0)
     , m_paused(true)
     , m_timePos(0.0)
     , m_duration(0.0)
@@ -164,7 +163,6 @@ MpvObject::MpvObject(QQuickItem *parent)
     }
 
     mpv::qt::set_option_variant(mpv, "hwdec", "auto");
-    mpv_observe_property(mpv, 0, "estimated-vf-fps", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG);
     mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
@@ -196,11 +194,6 @@ void MpvObject::on_mpv_events(void *ctx)
 {
     auto *self = static_cast<MpvObject *>(ctx);
     QMetaObject::invokeMethod(self, &MpvObject::processMpvEvents, Qt::QueuedConnection);
-}
-
-double MpvObject::videoFps() const
-{
-    return m_videoFps;
 }
 
 bool MpvObject::isPlaying() const
@@ -323,13 +316,7 @@ void MpvObject::processMpvEvents()
                 continue;
             }
 
-            if (qstrcmp(property->name, "estimated-vf-fps") == 0) {
-                if (property->format == MPV_FORMAT_DOUBLE && property->data) {
-                    setVideoFps(*static_cast<double *>(property->data));
-                } else {
-                    setVideoFps(0.0);
-                }
-            } else if (qstrcmp(property->name, "pause") == 0) {
+            if (qstrcmp(property->name, "pause") == 0) {
                 if (property->format == MPV_FORMAT_FLAG && property->data) {
                     setPaused(*static_cast<int *>(property->data) != 0);
                 }
@@ -405,7 +392,6 @@ void MpvObject::processMpvEvents()
                 setSubtitleTracks(tracks);
             }
         } else if (event->event_id == MPV_EVENT_END_FILE) {
-            setVideoFps(0.0);
             setTimePos(0.0);
             setDuration(0.0);
             setPaused(true);
@@ -428,16 +414,6 @@ QQuickFramebufferObject::Renderer *MpvObject::createRenderer() const
     window()->setPersistentGraphics(true);
     window()->setPersistentSceneGraph(true);
     return new MpvRenderer(const_cast<MpvObject *>(this));
-}
-
-void MpvObject::setVideoFps(double fps)
-{
-    if (qFuzzyCompare(m_videoFps, fps)) {
-        return;
-    }
-
-    m_videoFps = fps;
-    emit videoFpsChanged();
 }
 
 void MpvObject::setPaused(bool paused)
