@@ -61,6 +61,12 @@ Item {
         }
     }
 
+    Shortcut {
+        sequence: "Space"
+        context: Qt.ApplicationShortcut
+        onActivated: renderer.togglePause()
+    }
+
     Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
