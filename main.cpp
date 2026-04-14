@@ -22,7 +22,7 @@ int main(int argc, char **argv)
     view.setColor(QColor(QStringLiteral("#000000")));
     view.setResizeMode(QQuickView::SizeRootObjectToView);
     view.rootContext()->setContextProperty("initialFile", startupFile);
-    view.setSource(QUrl("qrc:/mpvqt/Main.qml"));
+    view.setSource(QUrl("qrc:/lzc-player/Main.qml"));
     view.show();
 
     return app.exec();

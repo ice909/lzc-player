@@ -1,5 +1,5 @@
-#ifndef MPV_QT_MPVOBJECT_H_
-#define MPV_QT_MPVOBJECT_H_
+#ifndef LZC_PLAYER_MPVOBJECT_H_
+#define LZC_PLAYER_MPVOBJECT_H_
 
 #include <QtQuick/QQuickFramebufferObject>
 

@@ -1,5 +1,5 @@
-#ifndef LIBMPV_QTHELPER_H_
-#define LIBMPV_QTHELPER_H_
+#ifndef LZC_PLAYER_QTHELPER_H_
+#define LZC_PLAYER_QTHELPER_H_
 
 #include <mpv/client.h>
 

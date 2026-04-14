@@ -33,8 +33,8 @@ namespace
 
     void applyNetworkOptions(mpv_handle *mpv)
     {
-        const QString headerFields = qEnvironmentVariable("MPV_QT_HTTP_HEADER_FIELDS");
-        const QString cookie = qEnvironmentVariable("MPV_QT_COOKIE");
+        const QString headerFields = qEnvironmentVariable("LZC_PLAYER_HTTP_HEADER_FIELDS");
+        const QString cookie = qEnvironmentVariable("LZC_PLAYER_COOKIE");
 
         if (!headerFields.isEmpty())
         {
