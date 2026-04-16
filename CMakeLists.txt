@@ -28,6 +28,13 @@ qt_add_resources(lzc-player qml_resources
         assets/pause.svg
         assets/seek-backward.svg
         assets/seek-forward.svg
+        assets/subtitle.svg
+        assets/subtitle-hover.svg
+        assets/volume.svg
+        assets/volume-small.svg
+        assets/volume-mute.svg
+        assets/fullscreen.svg
+        assets/quit-fullscreen.svg
 )
 
 target_include_directories(lzc-player PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")

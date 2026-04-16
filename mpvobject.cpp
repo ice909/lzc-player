@@ -14,6 +14,76 @@
 namespace
 {
 
+    QString formatSubtitleTitle(QString title, const QString &lang)
+    {
+        title = title.trimmed();
+        if (title.isEmpty())
+        {
+            return title;
+        }
+
+        title.remove(QStringLiteral("HDMV_PGS_SUBTITLE"));
+        title.remove(QStringLiteral("PGS"));
+        title.remove(QStringLiteral("SUP"));
+        title.remove(QChar('/'));
+        title = title.simplified();
+
+        const QString upperLang = lang.trimmed().toUpper();
+        if (!upperLang.isEmpty())
+        {
+            title.remove(upperLang, Qt::CaseInsensitive);
+            title = title.simplified();
+        }
+
+        if (title.isEmpty())
+        {
+            if (upperLang == QStringLiteral("CHS"))
+            {
+                return QStringLiteral("简体中文");
+            }
+            if (upperLang == QStringLiteral("CHT"))
+            {
+                return QStringLiteral("繁体中文");
+            }
+            if (upperLang == QStringLiteral("CHS/ENG"))
+            {
+                return QStringLiteral("简英字幕");
+            }
+            if (upperLang == QStringLiteral("CHT/ENG"))
+            {
+                return QStringLiteral("繁英字幕");
+            }
+        }
+
+        return title;
+    }
+
+    QString formatSubtitleCodec(const QString &codec)
+    {
+        const QString upper = codec.trimmed().toUpper();
+        if (upper.contains(QStringLiteral("PGS")) || upper.contains(QStringLiteral("HDMV_PGS")))
+        {
+            return QStringLiteral("SUP");
+        }
+        if (upper.contains(QStringLiteral("SUBRIP")) || upper == QStringLiteral("SRT"))
+        {
+            return QStringLiteral("SRT");
+        }
+        if (upper.contains(QStringLiteral("ASS")))
+        {
+            return QStringLiteral("ASS");
+        }
+        if (upper.contains(QStringLiteral("SSA")))
+        {
+            return QStringLiteral("SSA");
+        }
+        if (upper.contains(QStringLiteral("WEBVTT")) || upper == QStringLiteral("VTT"))
+        {
+            return QStringLiteral("VTT");
+        }
+        return upper;
+    }
+
     void on_mpv_redraw(void *ctx)
     {
         MpvObject::on_update(ctx);
@@ -491,7 +561,9 @@ void MpvObject::processMpvEvents()
                 int selectedVideoId = 0;
                 QVariantList tracks{QVariantMap{
                     {QStringLiteral("id"), 0},
-                    {QStringLiteral("title"), QStringLiteral("无字幕")},
+                    {QStringLiteral("title"), QStringLiteral("关闭")},
+                    {QStringLiteral("detail"), QString()},
+                    {QStringLiteral("isDefault"), false},
                 }};
 
                 if (property->format == MPV_FORMAT_NODE && property->data)
@@ -553,19 +625,26 @@ void MpvObject::processMpvEvents()
                         }
 
                         const int id = track.value(QStringLiteral("id")).toInt();
-                        QString title = track.value(QStringLiteral("title")).toString();
-                        if (title.isEmpty())
-                        {
-                            title = track.value(QStringLiteral("lang")).toString();
-                        }
+                        const QString lang = track.value(QStringLiteral("lang")).toString();
+                        const QString codec = formatSubtitleCodec(track.value(QStringLiteral("codec")).toString());
+                        const bool isDefault = track.value(QStringLiteral("default")).toBool();
+                        QString title = formatSubtitleTitle(track.value(QStringLiteral("title")).toString(), lang);
                         if (title.isEmpty())
                         {
                             title = QStringLiteral("字幕 %1").arg(id);
                         }
 
+                        QString detail = codec;
+                        if (!lang.isEmpty())
+                        {
+                            detail += detail.isEmpty() ? lang.toUpper() : QStringLiteral(" %1").arg(lang.toUpper());
+                        }
+
                         tracks.append(QVariantMap{
                             {QStringLiteral("id"), id},
                             {QStringLiteral("title"), title},
+                            {QStringLiteral("detail"), detail},
+                            {QStringLiteral("isDefault"), isDefault},
                         });
                     }
                 }

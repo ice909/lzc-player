@@ -24,10 +24,14 @@ Item {
         speedButtonHoverHandler.hovered || speedGapMouseArea.containsMouse || speedPanelHoverHandler.hovered
     readonly property bool qualityPanelVisible:
         qualityButtonHoverHandler.hovered || qualityGapMouseArea.containsMouse || qualityPanelHoverHandler.hovered
+    readonly property bool subtitlePanelVisible:
+        subtitleButtonHoverHandler.hovered || subtitleGapMouseArea.containsMouse || subtitlePanelHoverHandler.hovered
+    readonly property bool volumePanelVisible:
+        volumeButtonHoverHandler.hovered || volumeGapMouseArea.containsMouse || volumePanelHoverHandler.hovered
     readonly property real speedButtonReservedWidth: Math.ceil(Math.max(speedDefaultTextMetrics.advanceWidth, speedMaxTextMetrics.advanceWidth)) + 16
     readonly property real qualityButtonReservedWidth: Math.ceil(Math.max(qualityDefaultTextMetrics.advanceWidth, qualityMaxTextMetrics.advanceWidth)) + 16
     readonly property bool overlayOpen:
-        speedPanelVisible || qualityPanelVisible || subtitleMenu.opened || volumePopup.opened
+        speedPanelVisible || qualityPanelVisible || subtitlePanelVisible || volumePanelVisible
 
     function syncControlsVisibility() {
         if (!renderer.playing || overlayOpen) {
@@ -94,6 +98,17 @@ Item {
 
     function qualityButtonText() {
         return renderer.qualityLabel || "原画质"
+    }
+
+    function volumeIconSource() {
+        const volume = Math.round(Number(renderer.volume) || 0)
+        if (volume <= 0) {
+            return "qrc:/lzc-player/assets/volume-mute.svg"
+        }
+        if (volume < 50) {
+            return "qrc:/lzc-player/assets/volume-small.svg"
+        }
+        return "qrc:/lzc-player/assets/volume.svg"
     }
 
     TextMetrics {
@@ -755,127 +770,313 @@ Item {
                     }
                 }
 
-                ControlButton {
-                    id: subtitleButton
-                    text: "字幕"
-                    onClicked: subtitleMenu.open()
+                Item {
+                    id: subtitleSelector
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: 24
+                    implicitHeight: 24
 
-                    Menu {
-                        id: subtitleMenu
-                        y: -height - 12
-
-                        Instantiator {
-                            model: renderer.subtitleTracks
-                            delegate: MenuItem {
-                                required property var modelData
-                                text: modelData.title
-                                checkable: true
-                                checked: renderer.subtitleId === modelData.id
-                                onTriggered: renderer.setSubtitleId(modelData.id)
-                            }
-
-                            onObjectAdded: (index, object) => subtitleMenu.insertItem(index, object)
-                            onObjectRemoved: (index, object) => subtitleMenu.removeItem(object)
-                        }
-                    }
-                }
-
-                ControlButton {
-                    id: volumeButton
-                    text: "音量 " + Math.round(renderer.volume)
-                    onClicked: volumePopup.open()
-                }
-
-                Popup {
-                    id: volumePopup
-                    parent: volumeButton
-                    x: (parent.width - width) / 2
-                    y: -height - 12
-                    width: 64
-                    height: 176
-                    padding: 12
-                    modal: false
-                    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
-                    background: Rectangle {
-                        radius: 14
-                        color: "#F0121723"
+                    Rectangle {
+                        id: subtitlePanel
+                        visible: subtitlePanelVisible
+                        anchors.horizontalCenter: subtitleTrigger.horizontalCenter
+                        anchors.bottom: subtitleTrigger.top
+                        anchors.bottomMargin: 8
+                        width: 240
+                        height: Math.min(subtitlePanelColumn.implicitHeight + 16, 360)
+                        radius: 10
+                        color: "#141924"
                         border.width: 1
-                        border.color: "#323A52"
-                    }
+                        border.color: Qt.rgba(1, 1, 1, 0.15)
+                        z: 2
 
-                    Item {
-                        id: volumeBar
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.top: parent.top
-                        anchors.bottom: parent.bottom
-                        width: 24
-                        property bool dragging: false
-                        property real previewValue: renderer.volume
-                        readonly property real shownValue: dragging ? previewValue : renderer.volume
-                        readonly property real progress: Math.max(0, Math.min(1, shownValue / 100))
-
-                        function updateFromPosition(positionY) {
-                            const ratioFromTop = Math.max(0, Math.min(1, positionY / height))
-                            previewValue = (1 - ratioFromTop) * 100
+                        HoverHandler {
+                            id: subtitlePanelHoverHandler
                         }
 
-                        Rectangle {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            width: 6
-                            radius: 3
-                            color: "#253047"
+                        Column {
+                            id: subtitlePanelColumn
+                            x: 8
+                            y: 8
+                            width: parent.width - 16
+                            spacing: 0
 
-                            Rectangle {
-                                anchors.bottom: parent.bottom
+                            Item {
                                 width: parent.width
-                                height: parent.height * volumeBar.progress
-                                radius: parent.radius
-                                color: "#7EA8FF"
-                            }
-                        }
+                                height: subtitlePanelTitle.implicitHeight + 18
 
-                        Rectangle {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            y: (1 - volumeBar.progress) * (volumeBar.height - height)
-                            width: 14
-                            height: 14
-                            radius: 7
-                            color: "#F5F8FF"
-                            border.width: 2
-                            border.color: "#6B96FF"
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-
-                            onPressed: (mouse) => {
-                                volumeBar.dragging = true
-                                volumeBar.updateFromPosition(mouse.y)
-                                renderer.setVolume(volumeBar.previewValue)
-                            }
-
-                            onPositionChanged: (mouse) => {
-                                if (pressed) {
-                                    volumeBar.updateFromPosition(mouse.y)
-                                    renderer.setVolume(volumeBar.previewValue)
+                                Text {
+                                    id: subtitlePanelTitle
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 4
+                                    anchors.top: parent.top
+                                    anchors.topMargin: 4
+                                    text: "字幕"
+                                    color: "#FFFFFF"
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
                                 }
                             }
 
-                            onReleased: {
-                                volumeBar.dragging = false
+                            ScrollView {
+                                id: subtitleScrollView
+                                width: parent.width
+                                height: Math.min(subtitleOptionsColumn.implicitHeight, 360 - 16 - subtitlePanelTitle.implicitHeight - 18)
+                                clip: true
+                                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                                contentWidth: availableWidth
+
+                                Column {
+                                    id: subtitleOptionsColumn
+                                    width: subtitleScrollView.availableWidth
+                                    spacing: 4
+
+                                    Repeater {
+                                        model: renderer.subtitleTracks
+
+                                        delegate: Rectangle {
+                                            id: subtitleOption
+                                            required property var modelData
+                                            readonly property bool selected: renderer.subtitleId === modelData.id
+                                            readonly property bool offOption: modelData.id === 0
+
+                                            width: parent ? parent.width : 208
+                                            height: offOption ? 40 : 56
+                                            radius: 6
+                                            color: subtitleOptionMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.04) : "transparent"
+
+                                            Column {
+                                                anchors.left: parent.left
+                                                anchors.right: parent.right
+                                                anchors.leftMargin: 10
+                                                anchors.rightMargin: 10
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                spacing: offOption ? 0 : 3
+
+                                                Text {
+                                                    width: parent.width
+                                                    color: subtitleOption.selected ? Qt.rgba(33 / 255, 115 / 255, 223 / 255, 1) : "#CBD5E0"
+                                                    font.pixelSize: 14
+                                                    font.weight: Font.Medium
+                                                    text: subtitleOption.modelData.title
+                                                        + (subtitleOption.modelData.isDefault ? " - 默认" : "")
+                                                    elide: Text.ElideRight
+                                                }
+
+                                                Text {
+                                                    visible: !subtitleOption.offOption && !!subtitleOption.modelData.detail
+                                                    width: parent.width
+                                                    color: Qt.rgba(203 / 255, 213 / 255, 224 / 255, 0.8)
+                                                    font.pixelSize: 12
+                                                    font.weight: Font.Medium
+                                                    text: subtitleOption.modelData.detail
+                                                    elide: Text.ElideRight
+                                                }
+                                            }
+
+                                            MouseArea {
+                                                id: subtitleOptionMouseArea
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: renderer.setSubtitleId(subtitleOption.modelData.id)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: subtitleGapMouseArea
+                        anchors.right: subtitlePanel.right
+                        anchors.bottom: subtitleTrigger.top
+                        width: subtitlePanel.width
+                        height: subtitlePanel.anchors.bottomMargin
+                        hoverEnabled: true
+                        acceptedButtons: Qt.NoButton
+                    }
+
+                    Item {
+                        id: subtitleTrigger
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+
+                        HoverHandler {
+                            id: subtitleButtonHoverHandler
+                            cursorShape: Qt.PointingHandCursor
+                        }
+
+                        Image {
+                            anchors.centerIn: parent
+                            width: 24
+                            height: 24
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            mipmap: true
+                            source: subtitleButtonHoverHandler.hovered || subtitlePanelVisible
+                                ? "qrc:/lzc-player/assets/subtitle-hover.svg"
+                                : "qrc:/lzc-player/assets/subtitle.svg"
+                        }
+                    }
+                }
+
+                Item {
+                    id: volumeSelector
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: 24
+                    implicitHeight: 24
+
+                    Rectangle {
+                        id: volumePanel
+                        visible: volumePanelVisible
+                        anchors.horizontalCenter: volumeTrigger.horizontalCenter
+                        anchors.bottom: volumeTrigger.top
+                        anchors.bottomMargin: 8
+                        width: 72
+                        height: 212
+                        radius: 10
+                        color: "#141924"
+                        border.width: 1
+                        border.color: Qt.rgba(1, 1, 1, 0.15)
+                        z: 2
+
+                        HoverHandler {
+                            id: volumePanelHoverHandler
+                        }
+
+                        Item {
+                            id: volumeBar
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.top: parent.top
+                            anchors.topMargin: 12
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 12
+                            width: 28
+                            property bool dragging: false
+                            property real previewValue: renderer.volume
+                            readonly property real shownValue: dragging ? previewValue : renderer.volume
+                            readonly property real progress: Math.max(0, Math.min(1, shownValue / 100))
+
+                            function updateFromPosition(positionY) {
+                                const ratioFromTop = Math.max(0, Math.min(1, positionY / height))
+                                previewValue = (1 - ratioFromTop) * 100
                             }
 
-                            onCanceled: {
-                                volumeBar.dragging = false
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                anchors.top: parent.top
+                                text: Math.round(volumeBar.shownValue).toString()
+                                color: "#FFFFFF"
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
                             }
+
+                            Item {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                anchors.top: parent.top
+                                anchors.topMargin: 30
+                                anchors.bottom: parent.bottom
+                                width: parent.width
+
+                                Rectangle {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    width: 6
+                                    radius: 3
+                                    color: "#253047"
+
+                                    Rectangle {
+                                        anchors.bottom: parent.bottom
+                                        width: parent.width
+                                        height: parent.height * volumeBar.progress
+                                        radius: parent.radius
+                                        color: "#7EA8FF"
+                                    }
+                                }
+
+                                Rectangle {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    y: (1 - volumeBar.progress) * (parent.height - height)
+                                    width: 14
+                                    height: 14
+                                    radius: 7
+                                    color: "#F5F8FF"
+                                    border.width: 2
+                                    border.color: "#6B96FF"
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+
+                                    onPressed: (mouse) => {
+                                        volumeBar.dragging = true
+                                        volumeBar.updateFromPosition(mouse.y)
+                                        renderer.setVolume(volumeBar.previewValue)
+                                    }
+
+                                    onPositionChanged: (mouse) => {
+                                        if (pressed) {
+                                            volumeBar.updateFromPosition(mouse.y)
+                                            renderer.setVolume(volumeBar.previewValue)
+                                        }
+                                    }
+
+                                    onReleased: {
+                                        volumeBar.dragging = false
+                                    }
+
+                                    onCanceled: {
+                                        volumeBar.dragging = false
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: volumeGapMouseArea
+                        anchors.horizontalCenter: volumePanel.horizontalCenter
+                        anchors.bottom: volumeTrigger.top
+                        width: volumePanel.width
+                        height: volumePanel.anchors.bottomMargin
+                        hoverEnabled: true
+                        acceptedButtons: Qt.NoButton
+                    }
+
+                    Item {
+                        id: volumeTrigger
+                        anchors.centerIn: parent
+                        width: 28
+                        height: 38
+
+                        HoverHandler {
+                            id: volumeButtonHoverHandler
+                            cursorShape: Qt.PointingHandCursor
+                        }
+
+                        Image {
+                            anchors.centerIn: parent
+                            width: 28
+                            height: 28
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            mipmap: true
+                            source: volumeIconSource()
                         }
                     }
                 }
 
                 ControlButton {
-                    text: hostWindow && hostWindow.visibility === Window.FullScreen ? "退出全屏" : "全屏"
+                    iconSource: hostWindow && hostWindow.visibility === Window.FullScreen
+                        ? "qrc:/lzc-player/assets/quit-fullscreen.svg"
+                        : "qrc:/lzc-player/assets/fullscreen.svg"
+                    iconSize: 24
+                    chromeless: true
                     onClicked: {
                         if (!hostWindow) {
                             return
