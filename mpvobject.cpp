@@ -34,7 +34,7 @@ namespace
     void applyNetworkOptions(mpv_handle *mpv)
     {
         const QString headerFields = qEnvironmentVariable("LZC_PLAYER_HTTP_HEADER_FIELDS");
-        const QString cookie = qEnvironmentVariable("LZC_PLAYER_COOKIE");
+        const QString cookie = qApp->property("lzcPlayerCookie").toString();
 
         if (!headerFields.isEmpty())
         {
@@ -158,6 +158,8 @@ MpvObject::MpvObject(QQuickItem *parent)
 
     mpv_set_option_string(mpv, "terminal", "yes");
     mpv_set_option_string(mpv, "msg-level", "all=v");
+    mpv_set_option_string(mpv, "hwdec", "auto");
+    mpv_set_option_string(mpv, "gpu-context", "auto");
     mpv_set_option_string(mpv, "vo", "libmpv");
     mpv_set_option_string(mpv, "keep-open", "yes");
     applyNetworkOptions(mpv);
@@ -168,7 +170,6 @@ MpvObject::MpvObject(QQuickItem *parent)
         throw std::runtime_error("could not initialize mpv context");
     }
 
-    mpv::qt::set_option_variant(mpv, "hwdec", "auto");
     mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG);
     mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);

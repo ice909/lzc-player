@@ -28,6 +28,11 @@ qt_add_resources(lzc-player qml_resources
 
 target_include_directories(lzc-player PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
+target_compile_definitions(lzc-player
+    PRIVATE
+        LZC_PLAYER_VERSION="${PROJECT_VERSION}"
+)
+
 target_link_libraries(lzc-player
     PRIVATE
         PkgConfig::MPV
