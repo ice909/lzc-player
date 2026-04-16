@@ -1,0 +1,10 @@
+.git
+.gitignore
+.vscode
+.codex
+build
+build-*
+output
+*.AppImage
+*.zsync
+CMakeLists.txt.user*
