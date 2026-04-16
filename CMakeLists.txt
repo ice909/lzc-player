@@ -14,8 +14,12 @@ qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(lzc-player
     src/app/main.cpp
-    src/player/mpvobject.cpp
-    src/player/mpvobject.h
+    src/player/mpvplayerview.cpp
+    src/player/mpvplayerview.h
+    src/player/mpvplayersession.cpp
+    src/player/mpvplayersession.h
+    src/player/mpvtrackmapper.cpp
+    src/player/mpvtrackmapper.h
 )
 
 set_target_properties(lzc-player PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN TRUE)

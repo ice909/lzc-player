@@ -1,4 +1,4 @@
-#include "src/player/mpvobject.h"
+#include "src/player/mpvplayerview.h"
 
 #include <clocale>
 #include <initializer_list>
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 
     std::setlocale(LC_NUMERIC, "C");
 
-    qmlRegisterType<MpvObject>("mpvtest", 1, 0, "MpvObject");
+    qmlRegisterType<MpvPlayerView>("mpvtest", 1, 0, "MpvPlayerView");
 
     QQuickView view;
     view.setColor(QColor(QStringLiteral("#000000")));

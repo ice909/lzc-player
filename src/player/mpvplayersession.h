@@ -1,16 +1,13 @@
-#ifndef LZC_PLAYER_MPVOBJECT_H_
-#define LZC_PLAYER_MPVOBJECT_H_
+#ifndef LZC_PLAYER_MPVPLAYERSESSION_H_
+#define LZC_PLAYER_MPVPLAYERSESSION_H_
 
-#include <QtQuick/QQuickFramebufferObject>
+#include <QObject>
+#include <QString>
+#include <QVariant>
 
 #include <mpv/client.h>
-#include <mpv/render_gl.h>
 
-#include "src/common/qthelper.hpp"
-
-class MpvRenderer;
-
-class MpvObject : public QQuickFramebufferObject
+class MpvPlayerSession : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool playing READ isPlaying NOTIFY playingChanged)
@@ -28,16 +25,11 @@ class MpvObject : public QQuickFramebufferObject
     Q_PROPERTY(int subtitleId READ subtitleId NOTIFY subtitleIdChanged)
     Q_PROPERTY(bool consoleOpen READ consoleOpen NOTIFY consoleOpenChanged)
 
-    friend class MpvRenderer;
-
 public:
-    explicit MpvObject(QQuickItem *parent = nullptr);
-    ~MpvObject() override;
+    explicit MpvPlayerSession(QObject *parent = nullptr);
+    ~MpvPlayerSession() override;
 
-    Renderer *createRenderer() const override;
-
-    static void on_update(void *ctx);
-    static void on_mpv_events(void *ctx);
+    mpv_handle *handle() const;
 
     bool isPlaying() const;
     double timePos() const;
@@ -54,6 +46,8 @@ public:
     int subtitleId() const;
     bool consoleOpen() const;
 
+    static void onMpvEvents(void *ctx);
+
 public slots:
     void loadFile(const QString &path);
     void togglePause();
@@ -68,7 +62,6 @@ public slots:
     void setProperty(const QString &name, const QVariant &value);
 
 signals:
-    void onUpdate();
     void playingChanged();
     void timePosChanged();
     void durationChanged();
@@ -85,11 +78,12 @@ signals:
     void consoleOpenChanged();
 
 private slots:
-    void doUpdate();
-    void loadPendingFile();
     void processMpvEvents();
 
 private:
+    void observeProperties();
+    void handlePropertyChange(const mpv_event_property &property);
+    void handleTrackListChange(const mpv_event_property &property);
     void setPaused(bool paused);
     void setTimePos(double seconds);
     void setDuration(double seconds);
@@ -106,9 +100,6 @@ private:
     void setConsoleOpen(bool open);
 
     mpv_handle *mpv;
-    mpv_render_context *mpv_gl;
-    QString pendingFile;
-    QString sourceUrl;
     bool m_paused;
     double m_timePos;
     double m_duration;

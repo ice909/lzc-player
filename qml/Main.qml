@@ -95,7 +95,7 @@ Item {
         text: "1080P"
     }
 
-    MpvObject {
+    MpvPlayerView {
         id: renderer
         objectName: "renderer"
         anchors.fill: parent
@@ -295,7 +295,7 @@ Item {
     PlaybackControlsBar {
         id: controlsBar
         renderer: renderer
-        hostWindow: hostWindow
+        hostWindow: mainView.hostWindow
         controlsVisible: parent.controlsVisible
         playbackSpeedOptions: parent.playbackSpeedOptions
         speedButtonReservedWidth: parent.speedButtonReservedWidth
