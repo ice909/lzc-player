@@ -10,8 +10,10 @@ import "utils/PlayerFormat.js" as PlayerFormat
 import mpvtest 1.0
 
 Item {
+    id: mainView
     width: 1280
     height: 720
+    focus: true
 
     readonly property var hostWindow: Window.window
     property bool controlsVisible: true
@@ -31,6 +33,12 @@ Item {
     readonly property bool overlayOpen: controlsBar.overlayOpen
 
     function syncControlsVisibility() {
+        if (renderer.consoleOpen) {
+            controlsVisible = false
+            hideControlsTimer.stop()
+            return
+        }
+
         if (!renderer.playing || overlayOpen) {
             controlsVisible = true
             hideControlsTimer.stop()
@@ -41,8 +49,22 @@ Item {
     }
 
     function showControlsTemporarily() {
+        if (renderer.consoleOpen) {
+            controlsVisible = false
+            hideControlsTimer.stop()
+            return
+        }
+
         controlsVisible = true
         syncControlsVisibility()
+    }
+
+    function ensureKeyboardFocus() {
+        if (hostWindow) {
+            hostWindow.requestActivate()
+        }
+
+        mainView.forceActiveFocus(Qt.OtherFocusReason)
     }
 
     TextMetrics {
@@ -79,6 +101,8 @@ Item {
         anchors.fill: parent
 
         Component.onCompleted: {
+            mainView.ensureKeyboardFocus()
+
             if (initialFile) {
                 renderer.loadFile(initialFile)
             }
@@ -155,6 +179,12 @@ Item {
         function onPlayingChanged() {
             syncControlsVisibility()
         }
+
+        function onConsoleOpenChanged() {
+            if (renderer.consoleOpen) {
+                mainView.ensureKeyboardFocus()
+            }
+        }
     }
 
     onOverlayOpenChanged: syncControlsVisibility()
@@ -162,12 +192,14 @@ Item {
     Shortcut {
         sequence: "Space"
         context: Qt.ApplicationShortcut
+        enabled: !renderer.consoleOpen
         onActivated: renderer.togglePause()
     }
 
     Shortcut {
         sequence: "I"
         context: Qt.ApplicationShortcut
+        enabled: !renderer.consoleOpen
         onActivated: renderer.command([
             "script-binding",
             "stats/display-stats-toggle"
@@ -214,6 +246,18 @@ Item {
 
         if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
             renderer.command(["keypress", "ENTER"])
+            event.accepted = true
+            return
+        }
+
+        if (event.key === Qt.Key_Tab) {
+            renderer.command(["keypress", "TAB"])
+            event.accepted = true
+            return
+        }
+
+        if (event.key === Qt.Key_Space) {
+            renderer.command(["keypress", "SPACE"])
             event.accepted = true
             return
         }
