@@ -220,7 +220,7 @@ private:
 };
 
 MpvObject::MpvObject(QQuickItem *parent)
-    : QQuickFramebufferObject(parent), mpv(mpv_create()), mpv_gl(nullptr), sourceUrl(), m_paused(true), m_timePos(0.0), m_duration(0.0), m_networkSpeed(0), m_playbackSpeed(1.0), m_volume(100.0), m_videoId(0), m_subtitleId(0), m_consoleOpen(false), m_reachedEof(false)
+    : QQuickFramebufferObject(parent), mpv(mpv_create()), mpv_gl(nullptr), sourceUrl(), m_paused(true), m_timePos(0.0), m_duration(0.0), m_bufferDuration(0.0), m_bufferEnd(0.0), m_networkSpeed(0), m_playbackSpeed(1.0), m_volume(100.0), m_videoId(0), m_subtitleId(0), m_consoleOpen(false), m_reachedEof(false)
 {
     if (!mpv)
     {
@@ -244,6 +244,7 @@ MpvObject::MpvObject(QQuickItem *parent)
     mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG);
     mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "demuxer-cache-duration", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "cache-speed", MPV_FORMAT_INT64);
     mpv_observe_property(mpv, 0, "speed", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "volume", MPV_FORMAT_DOUBLE);
@@ -292,6 +293,16 @@ double MpvObject::timePos() const
 double MpvObject::duration() const
 {
     return m_duration;
+}
+
+double MpvObject::bufferDuration() const
+{
+    return m_bufferDuration;
+}
+
+double MpvObject::bufferEnd() const
+{
+    return m_bufferEnd;
 }
 
 qint64 MpvObject::networkSpeed() const
@@ -363,6 +374,10 @@ void MpvObject::loadFile(const QString &path)
     pendingFile.clear();
     sourceUrl = filePath;
     m_reachedEof = false;
+    setTimePos(0.0);
+    setDuration(0.0);
+    setBufferDuration(0.0);
+    setBufferEnd(0.0);
 
     mpv::qt::command_variant(mpv, QVariantList{QStringLiteral("loadfile"), filePath});
 }
@@ -479,6 +494,17 @@ void MpvObject::processMpvEvents()
                 else
                 {
                     setDuration(0.0);
+                }
+            }
+            else if (qstrcmp(property->name, "demuxer-cache-duration") == 0)
+            {
+                if (property->format == MPV_FORMAT_DOUBLE && property->data)
+                {
+                    setBufferDuration(*static_cast<double *>(property->data));
+                }
+                else
+                {
+                    setBufferDuration(0.0);
                 }
             }
             else if (qstrcmp(property->name, "cache-speed") == 0)
@@ -690,6 +716,8 @@ void MpvObject::processMpvEvents()
         {
             m_reachedEof = true;
             setTimePos(0.0);
+            setBufferDuration(0.0);
+            setBufferEnd(0.0);
             setPaused(true);
         }
         else if (event->event_id == MPV_EVENT_FILE_LOADED)
@@ -734,13 +762,22 @@ void MpvObject::setPaused(bool paused)
 
 void MpvObject::setTimePos(double seconds)
 {
-    if (qFuzzyCompare(m_timePos, seconds))
+    const double safeSeconds = qMax(0.0, seconds);
+    if (qFuzzyCompare(m_timePos, safeSeconds))
     {
         return;
     }
 
-    m_timePos = seconds;
+    const double previousTimePos = m_timePos;
+    m_timePos = safeSeconds;
     emit timePosChanged();
+
+    // Keep the buffered endpoint moving during normal playback, but avoid
+    // reusing the previous cache window after a large seek jump.
+    if (qAbs(m_timePos - previousTimePos) <= 1.0)
+    {
+        setBufferEnd(m_timePos + m_bufferDuration);
+    }
 }
 
 void MpvObject::setDuration(double seconds)
@@ -752,6 +789,30 @@ void MpvObject::setDuration(double seconds)
 
     m_duration = seconds;
     emit durationChanged();
+}
+
+void MpvObject::setBufferDuration(double seconds)
+{
+    if (qFuzzyCompare(m_bufferDuration, seconds))
+    {
+        return;
+    }
+
+    m_bufferDuration = qMax(0.0, seconds);
+    emit bufferDurationChanged();
+    setBufferEnd(m_timePos + m_bufferDuration);
+}
+
+void MpvObject::setBufferEnd(double seconds)
+{
+    const double safeSeconds = qMax(0.0, seconds);
+    if (qFuzzyCompare(m_bufferEnd, safeSeconds))
+    {
+        return;
+    }
+
+    m_bufferEnd = safeSeconds;
+    emit bufferEndChanged();
 }
 
 void MpvObject::setPlaybackSpeedValue(double speed)
