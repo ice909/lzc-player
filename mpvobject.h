@@ -20,6 +20,8 @@ class MpvObject : public QQuickFramebufferObject
     Q_PROPERTY(double playbackSpeed READ playbackSpeed NOTIFY playbackSpeedChanged)
     Q_PROPERTY(double volume READ volume NOTIFY volumeChanged)
     Q_PROPERTY(QString qualityLabel READ qualityLabel NOTIFY qualityLabelChanged)
+    Q_PROPERTY(QVariantList videoTracks READ videoTracks NOTIFY videoTracksChanged)
+    Q_PROPERTY(int videoId READ videoId NOTIFY videoIdChanged)
     Q_PROPERTY(QVariantList subtitleTracks READ subtitleTracks NOTIFY subtitleTracksChanged)
     Q_PROPERTY(int subtitleId READ subtitleId NOTIFY subtitleIdChanged)
     Q_PROPERTY(bool consoleOpen READ consoleOpen NOTIFY consoleOpenChanged)
@@ -42,6 +44,8 @@ public:
     double playbackSpeed() const;
     double volume() const;
     QString qualityLabel() const;
+    QVariantList videoTracks() const;
+    int videoId() const;
     QVariantList subtitleTracks() const;
     int subtitleId() const;
     bool consoleOpen() const;
@@ -53,6 +57,7 @@ public slots:
     void seekTo(double seconds);
     void setPlaybackSpeed(double speed);
     void setVolume(double volume);
+    void setVideoId(int id);
     void setSubtitleId(int id);
     void command(const QVariant &params);
     QVariant getProperty(const QString &name);
@@ -67,6 +72,8 @@ signals:
     void playbackSpeedChanged();
     void volumeChanged();
     void qualityLabelChanged();
+    void videoTracksChanged();
+    void videoIdChanged();
     void subtitleTracksChanged();
     void subtitleIdChanged();
     void consoleOpenChanged();
@@ -84,6 +91,8 @@ private:
     void setPlaybackSpeedValue(double speed);
     void setVolumeValue(double volume);
     void setQualityLabel(const QString &label);
+    void setVideoTracks(const QVariantList &tracks);
+    void setVideoIdValue(int id);
     void setSubtitleTracks(const QVariantList &tracks);
     void setSubtitleIdValue(int id);
     void setConsoleOpen(bool open);
@@ -99,6 +108,8 @@ private:
     double m_playbackSpeed;
     double m_volume;
     QString m_qualityLabel;
+    QVariantList m_videoTracks;
+    int m_videoId;
     QVariantList m_subtitleTracks;
     int m_subtitleId;
     bool m_consoleOpen;

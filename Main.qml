@@ -12,8 +12,8 @@ Item {
     readonly property var hostWindow: Window.window
     property bool controlsVisible: true
     readonly property var playbackSpeedOptions: [
-        { value: 1.75, label: "1.75x" },
         { value: 2.0, label: "2.0x" },
+        { value: 1.75, label: "1.75x" },
         { value: 1.5, label: "1.5x" },
         { value: 1.25, label: "1.25x" },
         { value: 1.0, label: "1.0x" },
@@ -22,9 +22,12 @@ Item {
     ]
     readonly property bool speedPanelVisible:
         speedButtonHoverHandler.hovered || speedGapMouseArea.containsMouse || speedPanelHoverHandler.hovered
+    readonly property bool qualityPanelVisible:
+        qualityButtonHoverHandler.hovered || qualityGapMouseArea.containsMouse || qualityPanelHoverHandler.hovered
     readonly property real speedButtonReservedWidth: Math.ceil(Math.max(speedDefaultTextMetrics.advanceWidth, speedMaxTextMetrics.advanceWidth)) + 16
+    readonly property real qualityButtonReservedWidth: Math.ceil(Math.max(qualityDefaultTextMetrics.advanceWidth, qualityMaxTextMetrics.advanceWidth)) + 16
     readonly property bool overlayOpen:
-        speedPanelVisible || qualityMenu.opened || subtitleMenu.opened || volumePopup.opened
+        speedPanelVisible || qualityPanelVisible || subtitleMenu.opened || volumePopup.opened
 
     function syncControlsVisibility() {
         if (!renderer.playing || overlayOpen) {
@@ -89,6 +92,10 @@ Item {
         return playbackSpeedMatches(1.0) ? "倍速" : formatPlaybackSpeedLabel(renderer.playbackSpeed)
     }
 
+    function qualityButtonText() {
+        return renderer.qualityLabel || "原画质"
+    }
+
     TextMetrics {
         id: speedDefaultTextMetrics
         font.pixelSize: 14
@@ -101,6 +108,20 @@ Item {
         font.pixelSize: 14
         font.weight: Font.Medium
         text: "1.75x"
+    }
+
+    TextMetrics {
+        id: qualityDefaultTextMetrics
+        font.pixelSize: 14
+        font.weight: Font.Medium
+        text: "原画质"
+    }
+
+    TextMetrics {
+        id: qualityMaxTextMetrics
+        font.pixelSize: 14
+        font.weight: Font.Medium
+        text: "1080P"
     }
 
     component ControlButton: Button {
@@ -509,13 +530,13 @@ Item {
             }
 
             RowLayout {
-                spacing: 8
+                spacing: 16
                 Layout.alignment: Qt.AlignVCenter
 
                 Item {
                     id: speedSelector
                     Layout.alignment: Qt.AlignVCenter
-                    implicitWidth: Math.max(speedButtonReservedWidth, speedPanel.width)
+                    implicitWidth: speedButtonReservedWidth
                     implicitHeight: Math.max(24, speedButtonLabel.implicitHeight)
 
                     Rectangle {
@@ -624,18 +645,112 @@ Item {
                     }
                 }
 
-                ControlButton {
-                    id: qualityButton
-                    text: renderer.qualityLabel || "画质"
-                    onClicked: qualityMenu.open()
+                Item {
+                    id: qualitySelector
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: qualityButtonReservedWidth
+                    implicitHeight: Math.max(24, qualityButtonLabel.implicitHeight)
 
-                    Menu {
-                        id: qualityMenu
-                        y: -height - 12
+                    Rectangle {
+                        id: qualityPanel
+                        visible: qualityPanelVisible
+                        anchors.horizontalCenter: qualityTrigger.horizontalCenter
+                        anchors.bottom: qualityTrigger.top
+                        anchors.bottomMargin: 8
+                        width: 168
+                        height: qualityOptionsColumn.implicitHeight + 16
+                        radius: 10
+                        color: "#141924"
+                        border.width: 1
+                        border.color: Qt.rgba(1, 1, 1, 0.15)
+                        z: 2
 
-                        MenuItem {
-                            text: renderer.qualityLabel ? "当前: " + renderer.qualityLabel : "等待视频信息"
-                            enabled: false
+                        HoverHandler {
+                            id: qualityPanelHoverHandler
+                        }
+
+                        Column {
+                            id: qualityOptionsColumn
+                            x: 8
+                            y: 8
+                            width: parent.width - 16
+                            spacing: 4
+
+                            Repeater {
+                                model: renderer.videoTracks
+
+                                delegate: Rectangle {
+                                    required property var modelData
+                                    readonly property bool selected: renderer.videoId === modelData.id
+
+                                    width: parent ? parent.width : 152
+                                    height: 32
+                                    implicitWidth: 152
+                                    implicitHeight: 32
+                                    radius: 6
+                                    color: qualityOptionMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.04) : "transparent"
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.label
+                                        color: parent.selected ? Qt.rgba(33 / 255, 115 / 255, 223 / 255, 1) : "#CBD5E0"
+                                        font.pixelSize: 14
+                                        font.weight: Font.Medium
+                                    }
+
+                                    Text {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.detail
+                                        color: parent.selected ? "#FFFFFF" : Qt.rgba(203 / 255, 213 / 255, 224 / 255, 0.8)
+                                        font.pixelSize: 13
+                                        font.weight: Font.Medium
+                                    }
+
+                                    MouseArea {
+                                        id: qualityOptionMouseArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: renderer.setVideoId(parent.modelData.id)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: qualityGapMouseArea
+                        anchors.right: qualityPanel.right
+                        anchors.bottom: qualityTrigger.top
+                        width: qualityPanel.width
+                        height: qualityPanel.anchors.bottomMargin
+                        hoverEnabled: true
+                        acceptedButtons: Qt.NoButton
+                    }
+
+                    Item {
+                        id: qualityTrigger
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: qualityButtonReservedWidth
+                        height: Math.max(24, qualityButtonLabel.implicitHeight)
+
+                        HoverHandler {
+                            id: qualityButtonHoverHandler
+                            cursorShape: Qt.PointingHandCursor
+                        }
+
+                        Text {
+                            id: qualityButtonLabel
+                            anchors.centerIn: parent
+                            text: qualityButtonText()
+                            color: "#CBD5E0"
+                            font.pixelSize: 14
+                            font.weight: Font.Medium
                         }
                     }
                 }
