@@ -22,6 +22,7 @@ class MpvObject : public QQuickFramebufferObject
     Q_PROPERTY(QString qualityLabel READ qualityLabel NOTIFY qualityLabelChanged)
     Q_PROPERTY(QVariantList subtitleTracks READ subtitleTracks NOTIFY subtitleTracksChanged)
     Q_PROPERTY(int subtitleId READ subtitleId NOTIFY subtitleIdChanged)
+    Q_PROPERTY(bool consoleOpen READ consoleOpen NOTIFY consoleOpenChanged)
 
     friend class MpvRenderer;
 
@@ -43,6 +44,7 @@ public:
     QString qualityLabel() const;
     QVariantList subtitleTracks() const;
     int subtitleId() const;
+    bool consoleOpen() const;
 
 public slots:
     void loadFile(const QString &path);
@@ -53,6 +55,7 @@ public slots:
     void setVolume(double volume);
     void setSubtitleId(int id);
     void command(const QVariant &params);
+    QVariant getProperty(const QString &name);
     void setProperty(const QString &name, const QVariant &value);
 
 signals:
@@ -66,6 +69,7 @@ signals:
     void qualityLabelChanged();
     void subtitleTracksChanged();
     void subtitleIdChanged();
+    void consoleOpenChanged();
 
 private slots:
     void doUpdate();
@@ -82,6 +86,7 @@ private:
     void setQualityLabel(const QString &label);
     void setSubtitleTracks(const QVariantList &tracks);
     void setSubtitleIdValue(int id);
+    void setConsoleOpen(bool open);
 
     mpv_handle *mpv;
     mpv_render_context *mpv_gl;
@@ -96,6 +101,7 @@ private:
     QString m_qualityLabel;
     QVariantList m_subtitleTracks;
     int m_subtitleId;
+    bool m_consoleOpen;
     bool m_reachedEof;
 };
 

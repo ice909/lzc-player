@@ -82,4 +82,4 @@ CMakeLists.txt.user*
 /build*/
 .codex
 output/
-
+squashfs-root

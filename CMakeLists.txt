@@ -24,6 +24,10 @@ qt_add_resources(lzc-player qml_resources
     PREFIX "/lzc-player"
     FILES
         Main.qml
+        assets/play.svg
+        assets/pause.svg
+        assets/seek-backward.svg
+        assets/seek-forward.svg
 )
 
 target_include_directories(lzc-player PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")

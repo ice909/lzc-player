@@ -149,7 +149,7 @@ private:
 };
 
 MpvObject::MpvObject(QQuickItem *parent)
-    : QQuickFramebufferObject(parent), mpv(mpv_create()), mpv_gl(nullptr), sourceUrl(), m_paused(true), m_timePos(0.0), m_duration(0.0), m_networkSpeed(0), m_playbackSpeed(1.0), m_volume(100.0), m_subtitleId(0), m_reachedEof(false)
+    : QQuickFramebufferObject(parent), mpv(mpv_create()), mpv_gl(nullptr), sourceUrl(), m_paused(true), m_timePos(0.0), m_duration(0.0), m_networkSpeed(0), m_playbackSpeed(1.0), m_volume(100.0), m_subtitleId(0), m_consoleOpen(false), m_reachedEof(false)
 {
     if (!mpv)
     {
@@ -180,6 +180,7 @@ MpvObject::MpvObject(QQuickItem *parent)
     mpv_observe_property(mpv, 0, "track-list", MPV_FORMAT_NODE);
     mpv_observe_property(mpv, 0, "sid", MPV_FORMAT_INT64);
     mpv_observe_property(mpv, 0, "eof-reached", MPV_FORMAT_FLAG);
+    mpv_observe_property(mpv, 0, "user-data/mpv/console/open", MPV_FORMAT_FLAG);
 
     connect(this, &MpvObject::onUpdate, this, &MpvObject::doUpdate, Qt::QueuedConnection);
 }
@@ -249,6 +250,11 @@ QVariantList MpvObject::subtitleTracks() const
 int MpvObject::subtitleId() const
 {
     return m_subtitleId;
+}
+
+bool MpvObject::consoleOpen() const
+{
+    return m_consoleOpen;
 }
 
 void MpvObject::doUpdate()
@@ -417,6 +423,17 @@ void MpvObject::processMpvEvents()
                     setSubtitleIdValue(0);
                 }
             }
+            else if (qstrcmp(property->name, "user-data/mpv/console/open") == 0)
+            {
+                if (property->format == MPV_FORMAT_FLAG && property->data)
+                {
+                    setConsoleOpen(*static_cast<int *>(property->data) != 0);
+                }
+                else
+                {
+                    setConsoleOpen(false);
+                }
+            }
             else if (qstrcmp(property->name, "eof-reached") == 0)
             {
                 if (property->format == MPV_FORMAT_FLAG && property->data)
@@ -500,6 +517,11 @@ void MpvObject::processMpvEvents()
 void MpvObject::command(const QVariant &params)
 {
     mpv::qt::command_variant(mpv, params);
+}
+
+QVariant MpvObject::getProperty(const QString &name)
+{
+    return mpv::qt::get_property_variant(mpv, name);
 }
 
 void MpvObject::setProperty(const QString &name, const QVariant &value)
@@ -612,4 +634,15 @@ void MpvObject::setSubtitleIdValue(int id)
 
     m_subtitleId = normalizedId;
     emit subtitleIdChanged();
+}
+
+void MpvObject::setConsoleOpen(bool open)
+{
+    if (m_consoleOpen == open)
+    {
+        return;
+    }
+
+    m_consoleOpen = open;
+    emit consoleOpenChanged();
 }
