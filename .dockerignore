@@ -5,6 +5,7 @@
 build
 build-*
 output
+output-test
 *.AppImage
 *.zsync
 CMakeLists.txt.user*

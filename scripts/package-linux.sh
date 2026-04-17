@@ -1,36 +1,40 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-APP_NAME="lzc-player"
-APP_DISPLAY_NAME="Lzc Player"
-BUILD_DIR="${BUILD_DIR:-/tmp/lzc-player-build}"
-APPDIR="${APPDIR:-/tmp/${APP_NAME}.AppDir}"
-OUTPUT_DIR="${OUTPUT_DIR:-/output}"
-QT_ROOT="${QT_ROOT:-/opt/Qt/6.8.2/gcc_64}"
-APPIMAGETOOL_BIN="${APPIMAGETOOL_BIN:-/usr/local/bin/appimagetool}"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP_NAME="${APP_NAME:-lzc-player}"
+APP_DISPLAY_NAME="${APP_DISPLAY_NAME:-Lzc Player}"
+QT_ROOT="${QT_ROOT:-}"
+BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build/linux-release}"
+APPDIR="${APPDIR:-${ROOT_DIR}/dist/linux/${APP_NAME}.AppDir}"
+DIST_ROOT="${DIST_ROOT:-${ROOT_DIR}/dist/linux}"
+LINUXDEPLOYQT_BIN="${LINUXDEPLOYQT_BIN:-$(command -v linuxdeployqt || true)}"
+APPIMAGETOOL_BIN="${APPIMAGETOOL_BIN:-$(command -v appimagetool || true)}"
 
-export PATH="${QT_ROOT}/bin:${PATH}"
-export CMAKE_PREFIX_PATH="${QT_ROOT}:${CMAKE_PREFIX_PATH:-}"
-export LD_LIBRARY_PATH="${QT_ROOT}/lib:${LD_LIBRARY_PATH:-}"
-export QMAKE="${QT_ROOT}/bin/qmake"
+if [[ -z "${LINUXDEPLOYQT_BIN}" ]]; then
+    echo "linuxdeployqt not found. Set LINUXDEPLOYQT_BIN or install it locally." >&2
+    exit 1
+fi
+
+if [[ -z "${APPIMAGETOOL_BIN}" ]]; then
+    echo "appimagetool not found. Set APPIMAGETOOL_BIN or install it locally." >&2
+    exit 1
+fi
+
+if [[ -n "${QT_ROOT}" ]]; then
+    export PATH="${QT_ROOT}/bin:${PATH}"
+    export CMAKE_PREFIX_PATH="${QT_ROOT}:${CMAKE_PREFIX_PATH:-}"
+    export LD_LIBRARY_PATH="${QT_ROOT}/lib:${LD_LIBRARY_PATH:-}"
+fi
+
 export VERSION="${VERSION:-0.1}"
-export ARCH="${ARCH:-x86_64}"
-export QML_SOURCES_PATHS="${QML_SOURCES_PATHS:-/src/qml}"
+export ARCH="${ARCH:-$(uname -m)}"
+export QML_SOURCES_PATHS="${QML_SOURCES_PATHS:-${ROOT_DIR}/qml}"
 export LANG="${LANG:-C.UTF-8}"
 export LC_ALL="${LC_ALL:-C.UTF-8}"
 
-if [[ ! -x /usr/local/bin/linuxdeployqt ]]; then
-    echo "linuxdeployqt not found at /usr/local/bin/linuxdeployqt" >&2
-    exit 1
-fi
-
-if [[ ! -x "${APPIMAGETOOL_BIN}" ]]; then
-    echo "appimagetool not found at ${APPIMAGETOOL_BIN}" >&2
-    exit 1
-fi
-
 qt_plugin_dir() {
-    if [[ -d "${QT_ROOT}/plugins" ]]; then
+    if [[ -n "${QT_ROOT}" && -d "${QT_ROOT}/plugins" ]]; then
         printf '%s\n' "${QT_ROOT}/plugins"
         return
     fi
@@ -70,10 +74,10 @@ restore_qt_sqldrivers() {
 }
 
 deploy_runtime() {
-    linuxdeployqt "${APPDIR}/usr/bin/${APP_NAME}" \
+    "${LINUXDEPLOYQT_BIN}" "${APPDIR}/usr/bin/${APP_NAME}" \
         -executable="${APPDIR}/usr/bin/${APP_NAME}" \
         -bundle-non-qt-libs \
-        -qmldir=/src/qml \
+        -qmldir="${ROOT_DIR}/qml" \
         -unsupported-allow-new-glibc
 }
 
@@ -118,13 +122,14 @@ prune_problematic_runtime_libs() {
 }
 
 build_appimage() {
-    (cd /tmp && "${APPIMAGETOOL_BIN}" "${APPDIR}")
+    (cd "${DIST_ROOT}" && "${APPIMAGETOOL_BIN}" "${APPDIR}")
 }
 
 rm -rf "${BUILD_DIR}" "${APPDIR}"
-cmake -S /src -B "${BUILD_DIR}" -G Ninja \
+mkdir -p "${DIST_ROOT}"
+
+cmake -S "${ROOT_DIR}" -B "${BUILD_DIR}" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="${QT_ROOT}" \
     -DCMAKE_INSTALL_PREFIX=/usr
 cmake --build "${BUILD_DIR}" --parallel
 DESTDIR="${APPDIR}" cmake --install "${BUILD_DIR}"
@@ -193,7 +198,7 @@ pushd "${APPDIR}" >/dev/null
 ln -sf "usr/bin/${APP_NAME}" AppRun
 popd >/dev/null
 
-pushd /tmp >/dev/null
+pushd "${DIST_ROOT}" >/dev/null
 rm -f "${APP_NAME}"*.AppImage "${APP_NAME}"*.zsync
 trap restore_qt_sqldrivers EXIT
 mask_qt_sqldrivers
@@ -204,9 +209,5 @@ restore_qt_sqldrivers
 trap - EXIT
 popd >/dev/null
 
-mkdir -p "${OUTPUT_DIR}"
-find /tmp -maxdepth 1 -type f -name "*.AppImage" -exec cp {} "${OUTPUT_DIR}/" \;
-find /tmp -maxdepth 1 -type f -name "*.zsync" -exec cp {} "${OUTPUT_DIR}/" \;
-
-echo "Generated files:"
-find "${OUTPUT_DIR}" -maxdepth 1 -type f \( -name "*.AppImage" -o -name "*.zsync" \) -print
+echo "Linux package created."
+find "${DIST_ROOT}" -maxdepth 1 -type f \( -name "*.AppImage" -o -name "*.zsync" \) -print

@@ -82,6 +82,7 @@ CMakeLists.txt.user*
 /build*/
 .codex
 output/
+output-test/
 squashfs-root
 dist/
 third_party/mpv/
