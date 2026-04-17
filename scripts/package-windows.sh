@@ -10,6 +10,35 @@ APP_NAME="${APP_NAME:-lzc-player}"
 PACKAGE_DIR="${PACKAGE_DIR:-${DIST_ROOT}/${APP_NAME}}"
 ZIP_PATH="${ZIP_PATH:-${DIST_ROOT}/${APP_NAME}-windows-x86_64.zip}"
 RUN_BUILD="${RUN_BUILD:-1}"
+RUNTIME_DEPENDENCY_COPY_COUNT=0
+
+readonly -a MPV_RUNTIME_DLL_NAMES=(
+    "zlib1.dll"
+    "libdouble-conversion.dll"
+    "libbz2-1.dll"
+    "libbrotlicommon.dll"
+    "libbrotlidec.dll"
+    "libbrotlienc.dll"
+    "libgraphite2.dll"
+    "libharfbuzz-0.dll"
+    "libfreetype-6.dll"
+    "libfribidi-0.dll"
+    "libass-9.dll"
+    "libiconv-2.dll"
+    "libcharset-1.dll"
+    "libglib-2.0-0.dll"
+    "libintl-8.dll"
+    "libpcre2-8-0.dll"
+    "libpcre2-16-0.dll"
+    "libffi-8.dll"
+    "libpng16-16.dll"
+    "libexpat-1.dll"
+    "libicuuc78.dll"
+    "libicuin78.dll"
+    "libicudt78.dll"
+    "liblzma-5.dll"
+    "libzstd.dll"
+)
 
 find_first_existing() {
     local path
@@ -52,7 +81,7 @@ normalize_path() {
 copy_runtime_dependencies() {
     local binary_path="$1"
     local target_dir="$2"
-    local line dll_path dll_name normalized_path
+    local line dll_path dll_name normalized_path target_path
 
     while IFS= read -r line; do
         dll_path="${line# }"
@@ -79,8 +108,52 @@ copy_runtime_dependencies() {
                 ;;
         esac
 
-        cp -f "${normalized_path}" "${target_dir}/"
+        target_path="${target_dir}/${dll_name}"
+        if [[ ! -f "${target_path}" ]]; then
+            cp -f "${normalized_path}" "${target_path}"
+            RUNTIME_DEPENDENCY_COPY_COUNT=$((RUNTIME_DEPENDENCY_COPY_COUNT + 1))
+        fi
     done < <(ntldd -R "${binary_path}" 2>/dev/null | awk '/=>/ { print $3 }')
+}
+
+copy_dependency_closure() {
+    local target_dir="$1"
+    local max_rounds="${2:-20}"
+    local round copied_this_round binary_path
+
+    for ((round = 1; round <= max_rounds; round++)); do
+        RUNTIME_DEPENDENCY_COPY_COUNT=0
+
+        while IFS= read -r binary_path; do
+            copy_runtime_dependencies "${binary_path}" "${target_dir}"
+        done < <(find "${target_dir}" -type f \( -iname "*.exe" -o -iname "*.dll" \) | sort)
+
+        copied_this_round="${RUNTIME_DEPENDENCY_COPY_COUNT}"
+        if ((copied_this_round == 0)); then
+            echo "Dependency closure completed in ${round} round(s)."
+            return 0
+        fi
+
+        echo "Dependency closure round ${round}: copied ${copied_this_round} DLL(s)."
+    done
+
+    echo "Dependency closure did not converge after ${max_rounds} rounds." >&2
+    return 1
+}
+
+copy_mpv_runtime_whitelist() {
+    local target_dir="$1"
+    local dll_name source_path
+
+    for dll_name in "${MPV_RUNTIME_DLL_NAMES[@]}"; do
+        source_path="$(find_first_existing \
+            "${QT_ROOT}/bin/${dll_name}" \
+            "${MPV_ROOT}/bin/${dll_name}" \
+            "${MPV_ROOT}/${dll_name}")"
+        if [[ -n "${source_path:-}" ]]; then
+            copy_if_exists "${source_path}" "${target_dir}"
+        fi
+    done
 }
 
 if [[ -z "${QT_ROOT}" ]]; then
@@ -138,9 +211,10 @@ windeployqt --release --qmldir "${ROOT_DIR}/qml" "${PACKAGE_DIR}/${APP_NAME}.exe
 copy_if_exists "${QT_ROOT}/bin/libstdc++-6.dll" "${PACKAGE_DIR}"
 copy_if_exists "${QT_ROOT}/bin/libgcc_s_seh-1.dll" "${PACKAGE_DIR}"
 copy_if_exists "${QT_ROOT}/bin/libwinpthread-1.dll" "${PACKAGE_DIR}"
+copy_if_exists "${QT_ROOT}/bin/opengl32sw.dll" "${PACKAGE_DIR}"
+copy_mpv_runtime_whitelist "${PACKAGE_DIR}"
 
-copy_runtime_dependencies "${PACKAGE_DIR}/${APP_NAME}.exe" "${PACKAGE_DIR}"
-copy_runtime_dependencies "${PACKAGE_DIR}/$(basename "${MPV_RUNTIME_DLL}")" "${PACKAGE_DIR}"
+copy_dependency_closure "${PACKAGE_DIR}"
 
 pushd "${DIST_ROOT}" >/dev/null
 7z a -tzip "${ZIP_PATH}" "$(basename "${PACKAGE_DIR}")" >/dev/null
