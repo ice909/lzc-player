@@ -30,14 +30,32 @@ copy_if_exists() {
     fi
 }
 
+normalize_path() {
+    local path="$1"
+
+    if [[ -z "${path}" ]]; then
+        return 1
+    fi
+
+    case "${path}" in
+        [A-Za-z]:\\*|[A-Za-z]:/*)
+            if command -v cygpath >/dev/null 2>&1; then
+                cygpath -u "${path}"
+                return 0
+            fi
+            ;;
+    esac
+
+    printf '%s\n' "${path}"
+}
+
 copy_runtime_dependencies() {
     local binary_path="$1"
     local target_dir="$2"
-    local line dll_path dll_name
+    local line dll_path dll_name normalized_path
 
     while IFS= read -r line; do
-        dll_path="${line%% =>*}"
-        dll_path="${dll_path# }"
+        dll_path="${line# }"
         dll_path="${dll_path% }"
 
         case "${dll_path}" in
@@ -46,11 +64,12 @@ copy_runtime_dependencies() {
                 ;;
         esac
 
-        if [[ ! -f "${dll_path}" ]]; then
+        normalized_path="$(normalize_path "${dll_path}")"
+        if [[ ! -f "${normalized_path}" ]]; then
             continue
         fi
 
-        dll_name="$(basename "${dll_path}")"
+        dll_name="$(basename "${normalized_path}")"
         case "${dll_name,,}" in
             kernel32.dll|user32.dll|gdi32.dll|advapi32.dll|ole32.dll|oleaut32.dll|shell32.dll|\
             setupapi.dll|winmm.dll|ws2_32.dll|imm32.dll|comdlg32.dll|crypt32.dll|rpcrt4.dll|\
@@ -60,7 +79,7 @@ copy_runtime_dependencies() {
                 ;;
         esac
 
-        cp -f "${dll_path}" "${target_dir}/"
+        cp -f "${normalized_path}" "${target_dir}/"
     done < <(ntldd -R "${binary_path}" 2>/dev/null | awk '/=>/ { print $3 }')
 }
 
@@ -69,7 +88,7 @@ if [[ -z "${QT_ROOT}" ]]; then
     exit 1
 fi
 
-export PATH="${QT_ROOT}/bin:${PATH}"
+export PATH="${QT_ROOT}/share/qt6/bin:${QT_ROOT}/bin:${MPV_ROOT}/bin:${MPV_ROOT}:${BUILD_DIR}:${PATH}"
 
 if [[ "${RUN_BUILD}" != "0" ]]; then
     bash "${ROOT_DIR}/scripts/build-msys2.sh"
