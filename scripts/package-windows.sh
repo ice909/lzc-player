@@ -78,6 +78,23 @@ normalize_path() {
     printf '%s\n' "${path}"
 }
 
+is_allowed_runtime_path() {
+    local normalized_path="$1"
+    local allowed_prefix
+
+    for allowed_prefix in \
+        "${QT_ROOT}" \
+        "${MPV_ROOT}" \
+        "${BUILD_DIR}" \
+        "${PACKAGE_DIR}"; do
+        if [[ -n "${allowed_prefix}" && "${normalized_path}" == "${allowed_prefix}"* ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 copy_runtime_dependencies() {
     local binary_path="$1"
     local target_dir="$2"
@@ -95,6 +112,10 @@ copy_runtime_dependencies() {
 
         normalized_path="$(normalize_path "${dll_path}")"
         if [[ ! -f "${normalized_path}" ]]; then
+            continue
+        fi
+
+        if ! is_allowed_runtime_path "${normalized_path}"; then
             continue
         fi
 
