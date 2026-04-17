@@ -16,6 +16,10 @@ class MpvPlayerSession : public QObject
     Q_PROPERTY(double bufferDuration READ bufferDuration NOTIFY bufferDurationChanged)
     Q_PROPERTY(double bufferEnd READ bufferEnd NOTIFY bufferEndChanged)
     Q_PROPERTY(qint64 networkSpeed READ networkSpeed NOTIFY networkSpeedChanged)
+    Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
+    Q_PROPERTY(bool buffering READ buffering NOTIFY bufferingChanged)
+    Q_PROPERTY(bool seeking READ seeking NOTIFY seekingChanged)
+    Q_PROPERTY(double bufferingProgress READ bufferingProgress NOTIFY bufferingProgressChanged)
     Q_PROPERTY(double playbackSpeed READ playbackSpeed NOTIFY playbackSpeedChanged)
     Q_PROPERTY(double volume READ volume NOTIFY volumeChanged)
     Q_PROPERTY(QString qualityLabel READ qualityLabel NOTIFY qualityLabelChanged)
@@ -37,6 +41,10 @@ public:
     double bufferDuration() const;
     double bufferEnd() const;
     qint64 networkSpeed() const;
+    bool loading() const;
+    bool buffering() const;
+    bool seeking() const;
+    double bufferingProgress() const;
     double playbackSpeed() const;
     double volume() const;
     QString qualityLabel() const;
@@ -69,6 +77,10 @@ signals:
     void bufferDurationChanged();
     void bufferEndChanged();
     void networkSpeedChanged();
+    void loadingChanged();
+    void bufferingChanged();
+    void seekingChanged();
+    void bufferingProgressChanged();
     void playbackSpeedChanged();
     void volumeChanged();
     void qualityLabelChanged();
@@ -91,6 +103,11 @@ private:
     void setBufferDuration(double seconds);
     void setBufferEnd(double seconds);
     void setNetworkSpeed(qint64 bytesPerSecond);
+    void setLoading(bool loading);
+    void setFileLoading(bool loading);
+    void setBuffering(bool buffering);
+    void setSeeking(bool seeking);
+    void setBufferingProgress(double progress);
     void setPlaybackSpeedValue(double speed);
     void setVolumeValue(double volume);
     void setQualityLabel(const QString &label);
@@ -100,6 +117,7 @@ private:
     void setSubtitleIdValue(int id);
     void setConsoleOpen(bool open);
     void applyPendingStartupPosition();
+    void updateLoadingState();
 
     mpv_handle *mpv;
     bool m_paused;
@@ -108,6 +126,11 @@ private:
     double m_bufferDuration;
     double m_bufferEnd;
     qint64 m_networkSpeed;
+    bool m_loading;
+    bool m_fileLoading;
+    bool m_buffering;
+    bool m_seeking;
+    double m_bufferingProgress;
     double m_playbackSpeed;
     double m_volume;
     QString m_qualityLabel;

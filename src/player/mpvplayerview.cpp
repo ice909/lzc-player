@@ -173,6 +173,10 @@ MpvPlayerView::MpvPlayerView(QQuickItem *parent)
     connect(m_session, &MpvPlayerSession::bufferDurationChanged, this, &MpvPlayerView::bufferDurationChanged);
     connect(m_session, &MpvPlayerSession::bufferEndChanged, this, &MpvPlayerView::bufferEndChanged);
     connect(m_session, &MpvPlayerSession::networkSpeedChanged, this, &MpvPlayerView::networkSpeedChanged);
+    connect(m_session, &MpvPlayerSession::loadingChanged, this, &MpvPlayerView::loadingChanged);
+    connect(m_session, &MpvPlayerSession::bufferingChanged, this, &MpvPlayerView::bufferingChanged);
+    connect(m_session, &MpvPlayerSession::seekingChanged, this, &MpvPlayerView::seekingChanged);
+    connect(m_session, &MpvPlayerSession::bufferingProgressChanged, this, &MpvPlayerView::bufferingProgressChanged);
     connect(m_session, &MpvPlayerSession::playbackSpeedChanged, this, &MpvPlayerView::playbackSpeedChanged);
     connect(m_session, &MpvPlayerSession::volumeChanged, this, &MpvPlayerView::volumeChanged);
     connect(m_session, &MpvPlayerSession::qualityLabelChanged, this, &MpvPlayerView::qualityLabelChanged);
@@ -223,6 +227,26 @@ double MpvPlayerView::bufferEnd() const
 qint64 MpvPlayerView::networkSpeed() const
 {
     return m_session->networkSpeed();
+}
+
+bool MpvPlayerView::loading() const
+{
+    return m_session->loading();
+}
+
+bool MpvPlayerView::buffering() const
+{
+    return m_session->buffering();
+}
+
+bool MpvPlayerView::seeking() const
+{
+    return m_session->seeking();
+}
+
+double MpvPlayerView::bufferingProgress() const
+{
+    return m_session->bufferingProgress();
 }
 
 double MpvPlayerView::playbackSpeed() const

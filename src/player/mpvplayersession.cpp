@@ -6,6 +6,7 @@
 #include <QGuiApplication>
 #include <QMetaObject>
 #include <QStringList>
+#include <QtMath>
 
 #include "src/common/qthelper.hpp"
 #include "src/player/mpvtrackmapper.h"
@@ -73,6 +74,11 @@ MpvPlayerSession::MpvPlayerSession(QObject *parent)
       m_bufferDuration(0.0),
       m_bufferEnd(0.0),
       m_networkSpeed(0),
+      m_loading(false),
+      m_fileLoading(false),
+      m_buffering(false),
+      m_seeking(false),
+      m_bufferingProgress(0.0),
       m_playbackSpeed(1.0),
       m_volume(100.0),
       m_videoId(0),
@@ -143,6 +149,26 @@ qint64 MpvPlayerSession::networkSpeed() const
     return m_networkSpeed;
 }
 
+bool MpvPlayerSession::loading() const
+{
+    return m_loading;
+}
+
+bool MpvPlayerSession::buffering() const
+{
+    return m_buffering;
+}
+
+bool MpvPlayerSession::seeking() const
+{
+    return m_seeking;
+}
+
+double MpvPlayerSession::bufferingProgress() const
+{
+    return m_bufferingProgress;
+}
+
 double MpvPlayerSession::playbackSpeed() const
 {
     return m_playbackSpeed;
@@ -201,6 +227,10 @@ void MpvPlayerSession::loadFile(const QString &path)
     setDuration(0.0);
     setBufferDuration(0.0);
     setBufferEnd(0.0);
+    setBuffering(false);
+    setSeeking(false);
+    setBufferingProgress(0.0);
+    setFileLoading(true);
 
     mpv::qt::command_variant(mpv, QVariantList{QStringLiteral("loadfile"), path});
 }
@@ -310,12 +340,17 @@ void MpvPlayerSession::processMpvEvents()
             setTimePos(0.0);
             setBufferDuration(0.0);
             setBufferEnd(0.0);
+            setBuffering(false);
+            setSeeking(false);
+            setBufferingProgress(0.0);
+            setFileLoading(false);
             setPaused(true);
         }
         else if (event->event_id == MPV_EVENT_FILE_LOADED)
         {
             m_reachedEof = false;
             applyPendingStartupPosition();
+            setFileLoading(false);
         }
     }
 }
@@ -327,6 +362,9 @@ void MpvPlayerSession::observeProperties()
     mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "demuxer-cache-duration", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "cache-speed", MPV_FORMAT_INT64);
+    mpv_observe_property(mpv, 0, "paused-for-cache", MPV_FORMAT_FLAG);
+    mpv_observe_property(mpv, 0, "seeking", MPV_FORMAT_FLAG);
+    mpv_observe_property(mpv, 0, "cache-buffering-state", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "speed", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "volume", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "video-params", MPV_FORMAT_NODE);
@@ -396,6 +434,49 @@ void MpvPlayerSession::handlePropertyChange(const mpv_event_property &property)
         else
         {
             setNetworkSpeed(0);
+        }
+        return;
+    }
+
+    if (qstrcmp(property.name, "paused-for-cache") == 0)
+    {
+        if (property.format == MPV_FORMAT_FLAG && property.data)
+        {
+            setBuffering(*static_cast<int *>(property.data) != 0);
+        }
+        else
+        {
+            setBuffering(false);
+        }
+        return;
+    }
+
+    if (qstrcmp(property.name, "seeking") == 0)
+    {
+        if (property.format == MPV_FORMAT_FLAG && property.data)
+        {
+            setSeeking(*static_cast<int *>(property.data) != 0);
+        }
+        else
+        {
+            setSeeking(false);
+        }
+        return;
+    }
+
+    if (qstrcmp(property.name, "cache-buffering-state") == 0)
+    {
+        if (property.format == MPV_FORMAT_DOUBLE && property.data)
+        {
+            setBufferingProgress(*static_cast<double *>(property.data) / 100.0);
+        }
+        else if (property.format == MPV_FORMAT_INT64 && property.data)
+        {
+            setBufferingProgress(static_cast<double>(*static_cast<int64_t *>(property.data)) / 100.0);
+        }
+        else
+        {
+            setBufferingProgress(0.0);
         }
         return;
     }
@@ -568,6 +649,70 @@ void MpvPlayerSession::setNetworkSpeed(qint64 bytesPerSecond)
     emit networkSpeedChanged();
 }
 
+void MpvPlayerSession::setLoading(bool loading)
+{
+    if (m_loading == loading)
+    {
+        return;
+    }
+
+    m_loading = loading;
+    emit loadingChanged();
+}
+
+void MpvPlayerSession::setFileLoading(bool loading)
+{
+    if (m_fileLoading == loading)
+    {
+        return;
+    }
+
+    m_fileLoading = loading;
+    updateLoadingState();
+}
+
+void MpvPlayerSession::setBuffering(bool buffering)
+{
+    if (m_buffering == buffering)
+    {
+        return;
+    }
+
+    m_buffering = buffering;
+    emit bufferingChanged();
+
+    if (!m_buffering)
+    {
+        setBufferingProgress(0.0);
+    }
+
+    updateLoadingState();
+}
+
+void MpvPlayerSession::setSeeking(bool seeking)
+{
+    if (m_seeking == seeking)
+    {
+        return;
+    }
+
+    m_seeking = seeking;
+    emit seekingChanged();
+    updateLoadingState();
+}
+
+void MpvPlayerSession::setBufferingProgress(double progress)
+{
+    const double normalizedProgress = qBound(0.0, progress, 1.0);
+    if (qFuzzyCompare(m_bufferingProgress, normalizedProgress))
+    {
+        return;
+    }
+
+    m_bufferingProgress = normalizedProgress;
+    emit bufferingProgressChanged();
+}
+
 void MpvPlayerSession::setPlaybackSpeedValue(double speed)
 {
     if (qFuzzyCompare(m_playbackSpeed, speed))
@@ -660,6 +805,11 @@ void MpvPlayerSession::setConsoleOpen(bool open)
     emit consoleOpenChanged();
 }
 
+void MpvPlayerSession::updateLoadingState()
+{
+    setLoading(m_fileLoading || m_buffering || m_seeking);
+}
+
 void MpvPlayerSession::applyPendingStartupPosition()
 {
     if (m_pendingStartupPosition.isEmpty())
@@ -676,15 +826,19 @@ void MpvPlayerSession::applyPendingStartupPosition()
         const double percent = position.first(position.size() - 1).toDouble(&ok);
         if (ok)
         {
+            setSeeking(true);
             mpv::qt::command_variant(
                 mpv, QVariantList{QStringLiteral("seek"), percent, QStringLiteral("absolute-percent+exact")});
+            return;
         }
         return;
     }
 
     if (const std::optional<double> seconds = parseTimestampToSeconds(position))
     {
+        setSeeking(true);
         mpv::qt::command_variant(
             mpv, QVariantList{QStringLiteral("seek"), *seconds, QStringLiteral("absolute+exact")});
+        return;
     }
 }

@@ -17,6 +17,7 @@ Item {
 
     readonly property var hostWindow: Window.window
     property bool controlsVisible: true
+    property bool loadingOverlayActive: renderer.loading
     readonly property var playbackSpeedOptions: [
         { value: 2.0, label: "2.0x" },
         { value: 1.75, label: "1.75x" },
@@ -119,6 +120,69 @@ Item {
         z: -1
     }
 
+    Item {
+        id: loadingOverlay
+        anchors.centerIn: parent
+        width: 58
+        height: 58
+        z: 3
+        visible: loadingOverlayActive || opacity > 0
+        opacity: renderer.loading ? 1 : 0
+        enabled: false
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 140
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: parent.width
+            height: parent.height
+            radius: width / 2
+            color: "#78000000"
+        }
+
+        Item {
+            id: spinner
+            anchors.centerIn: parent
+            width: 34
+            height: 34
+
+            RotationAnimator on rotation {
+                from: 0
+                to: 360
+                duration: 900
+                loops: Animation.Infinite
+                running: true
+            }
+
+            Canvas {
+                anchors.fill: parent
+                antialiasing: true
+
+                onPaint: {
+                    const ctx = getContext("2d")
+                    ctx.reset()
+
+                    const lineWidth = 2.2
+                    const diameter = Math.min(width, height) - lineWidth - 2
+                    const startAngle = -Math.PI * 0.82
+                    const endAngle = Math.PI * 0.82
+
+                    ctx.beginPath()
+                    ctx.strokeStyle = "#FFFFFF"
+                    ctx.lineWidth = lineWidth
+                    ctx.lineCap = "round"
+                    ctx.arc(width / 2, height / 2, diameter / 2, startAngle, endAngle, false)
+                    ctx.stroke()
+                }
+            }
+        }
+    }
+
     Rectangle {
         anchors.top: parent.top
         anchors.right: parent.right
@@ -177,11 +241,32 @@ Item {
         }
     }
 
+    Timer {
+        id: loadingOverlayHideTimer
+        interval: 140
+        repeat: false
+        onTriggered: {
+            if (!renderer.loading) {
+                loadingOverlayActive = false
+            }
+        }
+    }
+
     Connections {
         target: renderer
 
         function onPlayingChanged() {
             syncControlsVisibility()
+        }
+
+        function onLoadingChanged() {
+            if (renderer.loading) {
+                loadingOverlayHideTimer.stop()
+                loadingOverlayActive = true
+                return
+            }
+
+            loadingOverlayHideTimer.restart()
         }
 
         function onConsoleOpenChanged() {
