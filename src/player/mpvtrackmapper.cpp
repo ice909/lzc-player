@@ -157,10 +157,26 @@ MpvMappedTracks MpvTrackMapper::mapTracks(const QVariantList &trackList)
             detail += detail.isEmpty() ? lang.toUpper() : QStringLiteral(" %1").arg(lang.toUpper());
         }
 
+        const bool isExternal = track.value(QStringLiteral("external")).toBool();
+        const QString source = isExternal ? QStringLiteral("external") : QStringLiteral("embedded");
+        if (!detail.isEmpty())
+        {
+            detail = QStringLiteral("%1 %2")
+                         .arg(isExternal ? QStringLiteral("外挂") : QStringLiteral("内嵌"))
+                         .arg(detail);
+        }
+        else
+        {
+            detail = isExternal ? QStringLiteral("外挂") : QStringLiteral("内嵌");
+        }
+
         mapped.subtitleTracks.append(QVariantMap{
             {QStringLiteral("id"), id},
             {QStringLiteral("title"), title},
             {QStringLiteral("detail"), detail},
+            {QStringLiteral("lang"), lang},
+            {QStringLiteral("source"), source},
+            {QStringLiteral("isExternal"), isExternal},
             {QStringLiteral("isDefault"), isDefault},
         });
     }

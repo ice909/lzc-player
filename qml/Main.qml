@@ -108,7 +108,10 @@ Item {
                 renderer.setStartupPosition(initialStartPosition)
             }
 
-            if (initialFile) {
+            if (initialPlaylist && initialPlaylist.length > 0) {
+                renderer.setPlaylistItems(initialPlaylist)
+                renderer.playEpisode(0)
+            } else if (initialFile) {
                 renderer.loadFile(initialFile)
             }
         }
@@ -277,6 +280,20 @@ Item {
     }
 
     onOverlayOpenChanged: syncControlsVisibility()
+
+    Shortcut {
+        sequence: "MediaNext"
+        context: Qt.ApplicationShortcut
+        enabled: renderer.hasPlaylist && !renderer.consoleOpen
+        onActivated: renderer.playNextEpisode()
+    }
+
+    Shortcut {
+        sequence: "MediaPrevious"
+        context: Qt.ApplicationShortcut
+        enabled: renderer.hasPlaylist && !renderer.consoleOpen
+        onActivated: renderer.playPrevEpisode()
+    }
 
     Shortcut {
         sequence: "Space"

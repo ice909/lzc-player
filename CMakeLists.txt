@@ -32,6 +32,7 @@ qt_add_resources(lzc-player qml_resources
         qml/components/PlaybackControlsBar.qml
         qml/components/PlaybackProgressBar.qml
         qml/components/PlaybackSpeedSelector.qml
+        qml/components/EpisodeSelector.qml
         qml/components/QualitySelector.qml
         qml/components/SubtitleSelector.qml
         qml/components/VolumeSelector.qml
@@ -40,6 +41,7 @@ qt_add_resources(lzc-player qml_resources
         assets/icons/pause.svg
         assets/icons/seek-backward.svg
         assets/icons/seek-forward.svg
+        assets/icons/next-episode.svg
         assets/icons/subtitle.svg
         assets/icons/subtitle-hover.svg
         assets/icons/volume.svg

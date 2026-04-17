@@ -14,6 +14,13 @@
 namespace
 {
 
+QString normalizedLanguage(QString language)
+{
+    language = language.trimmed().toLower();
+    language.replace(QLatin1Char('_'), QLatin1Char('-'));
+    return language;
+}
+
 void applyNetworkOptions(mpv_handle *mpv)
 {
     const QString headerFields = qEnvironmentVariable("LZC_PLAYER_HTTP_HEADER_FIELDS");
@@ -84,7 +91,10 @@ MpvPlayerSession::MpvPlayerSession(QObject *parent)
       m_videoId(0),
       m_subtitleId(0),
       m_consoleOpen(false),
-      m_reachedEof(false)
+      m_reachedEof(false),
+      m_hasSubtitlePreference(false),
+      m_preferSubtitlesOff(false),
+      m_waitingToApplySubtitlePreference(false)
 {
     if (!mpv)
     {
@@ -231,8 +241,17 @@ void MpvPlayerSession::loadFile(const QString &path)
     setSeeking(false);
     setBufferingProgress(0.0);
     setFileLoading(true);
+    setPaused(false);
+    m_waitingToApplySubtitlePreference = false;
 
     mpv::qt::command_variant(mpv, QVariantList{QStringLiteral("loadfile"), path});
+    mpv::qt::set_property_variant(mpv, "pause", false);
+}
+
+void MpvPlayerSession::setExternalSubtitles(const QVariantList &subtitles)
+{
+    m_externalSubtitles = subtitles;
+    m_waitingToApplySubtitlePreference = false;
 }
 
 void MpvPlayerSession::setStartupPosition(const QString &position)
@@ -289,14 +308,7 @@ void MpvPlayerSession::setVideoId(int id)
 
 void MpvPlayerSession::setSubtitleId(int id)
 {
-    if (id <= 0)
-    {
-        mpv::qt::set_property_variant(mpv, "sid", QStringLiteral("no"));
-    }
-    else
-    {
-        mpv::qt::set_property_variant(mpv, "sid", id);
-    }
+    selectSubtitleTrack(id, true);
 }
 
 void MpvPlayerSession::command(const QVariant &params)
@@ -336,6 +348,8 @@ void MpvPlayerSession::processMpvEvents()
         }
         else if (event->event_id == MPV_EVENT_END_FILE)
         {
+            const auto *endFile = static_cast<mpv_event_end_file *>(event->data);
+            const bool reachedPlaylistEnd = endFile && endFile->reason == MPV_END_FILE_REASON_EOF;
             m_reachedEof = true;
             setTimePos(0.0);
             setBufferDuration(0.0);
@@ -344,13 +358,23 @@ void MpvPlayerSession::processMpvEvents()
             setSeeking(false);
             setBufferingProgress(0.0);
             setFileLoading(false);
-            setPaused(true);
+            if (reachedPlaylistEnd)
+            {
+                emit playbackFinished();
+            }
+            if (!m_fileLoading)
+            {
+                setPaused(true);
+            }
         }
         else if (event->event_id == MPV_EVENT_FILE_LOADED)
         {
             m_reachedEof = false;
+            setPaused(false);
+            mpv::qt::set_property_variant(mpv, "pause", false);
             applyPendingStartupPosition();
             setFileLoading(false);
+            loadExternalSubtitles();
         }
     }
 }
@@ -572,6 +596,222 @@ void MpvPlayerSession::handleTrackListChange(const mpv_event_property &property)
         setVideoIdValue(mapped.selectedVideoId);
     }
     setSubtitleTracks(mapped.subtitleTracks);
+
+    if (!m_waitingToApplySubtitlePreference)
+    {
+        return;
+    }
+
+    if (m_externalSubtitles.isEmpty() || subtitleTrackCountBySource(true) >= m_externalSubtitles.size())
+    {
+        applyStoredSubtitlePreference();
+        m_waitingToApplySubtitlePreference = false;
+    }
+}
+
+void MpvPlayerSession::loadExternalSubtitles()
+{
+    m_waitingToApplySubtitlePreference = false;
+
+    for (const QVariant &entry : m_externalSubtitles)
+    {
+        const QVariantMap subtitle = entry.toMap();
+        const QString url = subtitle.value(QStringLiteral("url")).toString().trimmed();
+        if (url.isEmpty())
+        {
+            continue;
+        }
+
+        const QString name = subtitle.value(QStringLiteral("name")).toString().trimmed();
+        const QString lang = normalizedLanguage(subtitle.value(QStringLiteral("lang")).toString());
+        mpv::qt::command_variant(
+            mpv,
+            QVariantList{
+                QStringLiteral("sub-add"),
+                url,
+                QStringLiteral("auto"),
+                name,
+                lang,
+            });
+        m_waitingToApplySubtitlePreference = true;
+    }
+
+    if (!m_waitingToApplySubtitlePreference)
+    {
+        applyStoredSubtitlePreference();
+    }
+}
+
+void MpvPlayerSession::rememberSubtitlePreference(int id)
+{
+    m_hasSubtitlePreference = true;
+    m_preferSubtitlesOff = id <= 0;
+    m_preferredSubtitleLang.clear();
+
+    if (id <= 0)
+    {
+        return;
+    }
+
+    for (const QVariant &entry : m_subtitleTracks)
+    {
+        const QVariantMap track = entry.toMap();
+        if (track.value(QStringLiteral("id")).toInt() != id)
+        {
+            continue;
+        }
+
+        const QString lang = normalizedLanguage(track.value(QStringLiteral("lang")).toString());
+        if (!lang.isEmpty())
+        {
+            m_preferredSubtitleLang = lang;
+            return;
+        }
+
+        m_hasSubtitlePreference = false;
+        return;
+    }
+
+    m_hasSubtitlePreference = false;
+}
+
+bool MpvPlayerSession::applyStoredSubtitlePreference()
+{
+    if (m_preferSubtitlesOff)
+    {
+        selectSubtitleTrack(0, false);
+        return true;
+    }
+
+    if (m_hasSubtitlePreference)
+    {
+        const int preferredId = preferredSubtitleTrackId();
+        if (preferredId > 0)
+        {
+            selectSubtitleTrack(preferredId, false);
+        }
+        return true;
+    }
+
+    if (m_subtitleId > 0)
+    {
+        return true;
+    }
+
+    for (const QVariant &entry : m_externalSubtitles)
+    {
+        const QVariantMap subtitle = entry.toMap();
+        if (!subtitle.value(QStringLiteral("default")).toBool())
+        {
+            continue;
+        }
+
+        const QString desiredLang = normalizedLanguage(subtitle.value(QStringLiteral("lang")).toString());
+        const QString desiredName = subtitle.value(QStringLiteral("name")).toString().trimmed();
+        for (const QVariant &trackEntry : m_subtitleTracks)
+        {
+            const QVariantMap track = trackEntry.toMap();
+            if (!track.value(QStringLiteral("isExternal")).toBool())
+            {
+                continue;
+            }
+
+            const QString trackLang = normalizedLanguage(track.value(QStringLiteral("lang")).toString());
+            const QString trackTitle = track.value(QStringLiteral("title")).toString().trimmed();
+            if ((!desiredLang.isEmpty() && trackLang == desiredLang)
+                || (!desiredName.isEmpty() && trackTitle == desiredName))
+            {
+                selectSubtitleTrack(track.value(QStringLiteral("id")).toInt(), false);
+                return true;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool MpvPlayerSession::hasMatchingSubtitleLanguage() const
+{
+    if (m_preferredSubtitleLang.isEmpty())
+    {
+        return false;
+    }
+
+    for (const QVariant &entry : m_subtitleTracks)
+    {
+        const QVariantMap track = entry.toMap();
+        if (track.value(QStringLiteral("id")).toInt() <= 0)
+        {
+            continue;
+        }
+
+        if (normalizedLanguage(track.value(QStringLiteral("lang")).toString()) == m_preferredSubtitleLang)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int MpvPlayerSession::subtitleTrackCountBySource(bool external) const
+{
+    int count = 0;
+    for (const QVariant &entry : m_subtitleTracks)
+    {
+        const QVariantMap track = entry.toMap();
+        if (track.value(QStringLiteral("id")).toInt() <= 0)
+        {
+            continue;
+        }
+
+        if (track.value(QStringLiteral("isExternal")).toBool() == external)
+        {
+            ++count;
+        }
+    }
+
+    return count;
+}
+
+int MpvPlayerSession::preferredSubtitleTrackId() const
+{
+    if (!hasMatchingSubtitleLanguage())
+    {
+        return 0;
+    }
+
+    for (const QVariant &entry : m_subtitleTracks)
+    {
+        const QVariantMap track = entry.toMap();
+        if (track.value(QStringLiteral("id")).toInt() <= 0)
+        {
+            continue;
+        }
+
+        if (normalizedLanguage(track.value(QStringLiteral("lang")).toString()) == m_preferredSubtitleLang)
+        {
+            return track.value(QStringLiteral("id")).toInt();
+        }
+    }
+
+    return 0;
+}
+
+void MpvPlayerSession::selectSubtitleTrack(int id, bool rememberPreference)
+{
+    if (rememberPreference)
+    {
+        rememberSubtitlePreference(id);
+    }
+
+    if (id <= 0)
+    {
+        mpv::qt::set_property_variant(mpv, "sid", QStringLiteral("no"));
+        return;
+    }
+
+    mpv::qt::set_property_variant(mpv, "sid", id);
 }
 
 void MpvPlayerSession::setPaused(bool paused)

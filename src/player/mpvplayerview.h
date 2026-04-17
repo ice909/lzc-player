@@ -6,6 +6,7 @@
 #include <mpv/render_gl.h>
 
 #include <QString>
+#include <QStringList>
 #include <QVariant>
 
 class MpvPlayerSession;
@@ -31,6 +32,10 @@ class MpvPlayerView : public QQuickFramebufferObject
     Q_PROPERTY(QVariantList subtitleTracks READ subtitleTracks NOTIFY subtitleTracksChanged)
     Q_PROPERTY(int subtitleId READ subtitleId NOTIFY subtitleIdChanged)
     Q_PROPERTY(bool consoleOpen READ consoleOpen NOTIFY consoleOpenChanged)
+    Q_PROPERTY(QVariantList playlistItems READ playlistItems NOTIFY playlistItemsChanged)
+    Q_PROPERTY(int playlistIndex READ playlistIndex NOTIFY playlistIndexChanged)
+    Q_PROPERTY(int playlistCount READ playlistCount NOTIFY playlistCountChanged)
+    Q_PROPERTY(bool hasPlaylist READ hasPlaylist NOTIFY playlistItemsChanged)
 
 public:
     explicit MpvPlayerView(QQuickItem *parent = nullptr);
@@ -59,9 +64,17 @@ public:
     QVariantList subtitleTracks() const;
     int subtitleId() const;
     bool consoleOpen() const;
+    QVariantList playlistItems() const;
+    int playlistIndex() const;
+    int playlistCount() const;
+    bool hasPlaylist() const;
 
 public slots:
     void loadFile(const QString &path);
+    void setPlaylistItems(const QVariantList &items);
+    void playEpisode(int index);
+    void playNextEpisode();
+    void playPrevEpisode();
     void setStartupPosition(const QString &position);
     void togglePause();
     void seekRelative(double seconds);
@@ -94,17 +107,30 @@ signals:
     void subtitleTracksChanged();
     void subtitleIdChanged();
     void consoleOpenChanged();
+    void playlistItemsChanged();
+    void playlistIndexChanged();
+    void playlistCountChanged();
 
 private slots:
     void requestFrameUpdate();
     void markRenderContextReady();
     void loadPendingFile();
+    void handlePlaybackFinished();
 
 private:
+    void loadMedia(const QString &path, const QVariantList &externalSubtitles);
+    QVariantMap playlistItemAt(int index) const;
+    QVariantList normalizedSubtitles(const QVariantList &subtitles) const;
+    void setPlaylistIndexInternal(int index);
+    void loadEpisodeAtIndex(int index);
+
     MpvPlayerSession *m_session;
     QString m_pendingFile;
+    QVariantList m_pendingExternalSubtitles;
     bool m_renderContextReady;
     mpv_render_context *m_renderContext;
+    QVariantList m_playlistItems;
+    int m_playlistIndex;
 };
 
 #endif

@@ -16,6 +16,7 @@ Rectangle {
     required property real qualityButtonReservedWidth
     readonly property bool overlayOpen:
         speedSelector.panelVisible
+        || episodeSelector.panelVisible
         || qualitySelector.panelVisible
         || subtitleSelector.panelVisible
         || volumeSelector.panelVisible
@@ -109,6 +110,16 @@ Rectangle {
                     onClicked: controlsBar.renderer.seekRelative(10)
                 }
 
+                ControlButton {
+                    Layout.alignment: Qt.AlignVCenter
+                    visible: controlsBar.renderer.hasPlaylist
+                    enabled: controlsBar.renderer.hasPlaylist
+                    iconSource: "qrc:/lzc-player/assets/icons/next-episode.svg"
+                    iconSize: 20
+                    chromeless: true
+                    onClicked: controlsBar.renderer.playNextEpisode()
+                }
+
                 Text {
                     Layout.alignment: Qt.AlignVCenter
                     textFormat: Text.RichText
@@ -137,6 +148,12 @@ Rectangle {
                     renderer: controlsBar.renderer
                     playbackSpeedOptions: controlsBar.playbackSpeedOptions
                     reservedWidth: controlsBar.speedButtonReservedWidth
+                }
+
+                EpisodeSelector {
+                    id: episodeSelector
+                    Layout.alignment: Qt.AlignVCenter
+                    renderer: controlsBar.renderer
                 }
 
                 QualitySelector {

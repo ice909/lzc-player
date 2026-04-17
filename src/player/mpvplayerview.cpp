@@ -163,10 +163,12 @@ private:
 MpvPlayerView::MpvPlayerView(QQuickItem *parent)
     : QQuickFramebufferObject(parent),
       m_session(new MpvPlayerSession(this)),
+      m_playlistIndex(-1),
       m_renderContextReady(false),
       m_renderContext(nullptr)
 {
     connect(this, &MpvPlayerView::frameUpdateRequested, this, &MpvPlayerView::requestFrameUpdate, Qt::QueuedConnection);
+    connect(m_session, &MpvPlayerSession::playbackFinished, this, &MpvPlayerView::handlePlaybackFinished);
     connect(m_session, &MpvPlayerSession::playingChanged, this, &MpvPlayerView::playingChanged);
     connect(m_session, &MpvPlayerSession::timePosChanged, this, &MpvPlayerView::timePosChanged);
     connect(m_session, &MpvPlayerSession::durationChanged, this, &MpvPlayerView::durationChanged);
@@ -289,6 +291,26 @@ bool MpvPlayerView::consoleOpen() const
     return m_session->consoleOpen();
 }
 
+QVariantList MpvPlayerView::playlistItems() const
+{
+    return m_playlistItems;
+}
+
+int MpvPlayerView::playlistIndex() const
+{
+    return m_playlistIndex;
+}
+
+int MpvPlayerView::playlistCount() const
+{
+    return m_playlistItems.size();
+}
+
+bool MpvPlayerView::hasPlaylist() const
+{
+    return !m_playlistItems.isEmpty();
+}
+
 void MpvPlayerView::loadFile(const QString &path)
 {
     if (path.isEmpty())
@@ -296,15 +318,68 @@ void MpvPlayerView::loadFile(const QString &path)
         return;
     }
 
+    loadMedia(path, QVariantList{});
+}
+
+void MpvPlayerView::loadMedia(const QString &path, const QVariantList &externalSubtitles)
+{
     if (!m_renderContextReady)
     {
         m_pendingFile = path;
+        m_pendingExternalSubtitles = externalSubtitles;
         update();
         return;
     }
 
     m_pendingFile.clear();
+    m_pendingExternalSubtitles.clear();
+    m_session->setExternalSubtitles(externalSubtitles);
     m_session->loadFile(path);
+}
+
+void MpvPlayerView::setPlaylistItems(const QVariantList &items)
+{
+    if (m_playlistItems == items)
+    {
+        return;
+    }
+
+    const int previousCount = m_playlistItems.size();
+    m_playlistItems = items;
+    emit playlistItemsChanged();
+
+    if (previousCount != m_playlistItems.size())
+    {
+        emit playlistCountChanged();
+    }
+
+    const int nextIndex = m_playlistItems.isEmpty() ? -1 : qBound(0, m_playlistIndex, m_playlistItems.size() - 1);
+    setPlaylistIndexInternal(nextIndex);
+}
+
+void MpvPlayerView::playEpisode(int index)
+{
+    loadEpisodeAtIndex(index);
+}
+
+void MpvPlayerView::playNextEpisode()
+{
+    if (m_playlistItems.isEmpty())
+    {
+        return;
+    }
+
+    loadEpisodeAtIndex(m_playlistIndex + 1);
+}
+
+void MpvPlayerView::playPrevEpisode()
+{
+    if (m_playlistItems.isEmpty())
+    {
+        return;
+    }
+
+    loadEpisodeAtIndex(m_playlistIndex - 1);
 }
 
 void MpvPlayerView::setStartupPosition(const QString &position)
@@ -387,7 +462,81 @@ void MpvPlayerView::loadPendingFile()
 
     const QString pendingFile = m_pendingFile;
     m_pendingFile.clear();
+    const QVariantList pendingExternalSubtitles = m_pendingExternalSubtitles;
+    m_pendingExternalSubtitles.clear();
+    m_session->setExternalSubtitles(pendingExternalSubtitles);
     m_session->loadFile(pendingFile);
+}
+
+void MpvPlayerView::handlePlaybackFinished()
+{
+    if (m_playlistItems.isEmpty())
+    {
+        return;
+    }
+
+    playNextEpisode();
+}
+
+QVariantMap MpvPlayerView::playlistItemAt(int index) const
+{
+    if (index < 0 || index >= m_playlistItems.size())
+    {
+        return {};
+    }
+
+    return m_playlistItems.at(index).toMap();
+}
+
+QVariantList MpvPlayerView::normalizedSubtitles(const QVariantList &subtitles) const
+{
+    QVariantList normalized;
+    for (const QVariant &entry : subtitles)
+    {
+        const QVariantMap subtitle = entry.toMap();
+        const QString url = subtitle.value(QStringLiteral("url")).toString().trimmed();
+        const QString id = subtitle.value(QStringLiteral("id")).toString().trimmed();
+        if (url.isEmpty() || id.isEmpty())
+        {
+            continue;
+        }
+
+        QVariantMap item = subtitle;
+        item.insert(QStringLiteral("url"), url);
+        item.insert(QStringLiteral("id"), id);
+        item.insert(QStringLiteral("name"), subtitle.value(QStringLiteral("name")).toString().trimmed());
+        item.insert(QStringLiteral("lang"), subtitle.value(QStringLiteral("lang")).toString().trimmed());
+        item.insert(QStringLiteral("format"), subtitle.value(QStringLiteral("format")).toString().trimmed());
+        item.insert(QStringLiteral("default"), subtitle.value(QStringLiteral("default")).toBool());
+        normalized.append(item);
+    }
+
+    return normalized;
+}
+
+void MpvPlayerView::setPlaylistIndexInternal(int index)
+{
+    const int normalizedIndex = (index >= 0 && index < m_playlistItems.size()) ? index : -1;
+    if (m_playlistIndex == normalizedIndex)
+    {
+        return;
+    }
+
+    m_playlistIndex = normalizedIndex;
+    emit playlistIndexChanged();
+}
+
+void MpvPlayerView::loadEpisodeAtIndex(int index)
+{
+    const QVariantMap item = playlistItemAt(index);
+    const QString path = item.value(QStringLiteral("url")).toString().trimmed();
+    if (path.isEmpty())
+    {
+        return;
+    }
+
+    setPlaylistIndexInternal(index);
+    loadMedia(path, normalizedSubtitles(item.value(QStringLiteral("subtitles")).toList()));
 }
 
 mpv_handle *MpvPlayerView::mpvHandle() const

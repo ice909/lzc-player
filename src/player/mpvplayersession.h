@@ -58,6 +58,7 @@ public:
 
 public slots:
     void loadFile(const QString &path);
+    void setExternalSubtitles(const QVariantList &subtitles);
     void setStartupPosition(const QString &position);
     void togglePause();
     void seekRelative(double seconds);
@@ -71,6 +72,7 @@ public slots:
     void setProperty(const QString &name, const QVariant &value);
 
 signals:
+    void playbackFinished();
     void playingChanged();
     void timePosChanged();
     void durationChanged();
@@ -97,6 +99,13 @@ private:
     void observeProperties();
     void handlePropertyChange(const mpv_event_property &property);
     void handleTrackListChange(const mpv_event_property &property);
+    void loadExternalSubtitles();
+    void rememberSubtitlePreference(int id);
+    bool applyStoredSubtitlePreference();
+    bool hasMatchingSubtitleLanguage() const;
+    int subtitleTrackCountBySource(bool external) const;
+    int preferredSubtitleTrackId() const;
+    void selectSubtitleTrack(int id, bool rememberPreference);
     void setPaused(bool paused);
     void setTimePos(double seconds);
     void setDuration(double seconds);
@@ -141,6 +150,11 @@ private:
     bool m_consoleOpen;
     bool m_reachedEof;
     QString m_pendingStartupPosition;
+    QVariantList m_externalSubtitles;
+    QString m_preferredSubtitleLang;
+    bool m_hasSubtitlePreference;
+    bool m_preferSubtitlesOff;
+    bool m_waitingToApplySubtitlePreference;
 };
 
 #endif
