@@ -7,6 +7,7 @@ BUILD_PRESET="${BUILD_PRESET:-build-msys2-mingw64}"
 QT_ROOT="${QT_ROOT:-${MSYSTEM_PREFIX:-${MINGW_PREFIX:-}}}"
 MPV_ROOT="${MPV_ROOT:-${ROOT_DIR}/third_party/mpv}"
 RUN_WINDEPLOYQT="${RUN_WINDEPLOYQT:-1}"
+CMAKE_BIN="${CMAKE_BIN:-}"
 
 find_first_existing() {
     local path
@@ -55,15 +56,41 @@ if [[ -z "${MPV_RUNTIME_DLL:-}" ]]; then
     exit 1
 fi
 
+if [[ -z "${CMAKE_BIN}" && -x "${QT_ROOT}/bin/cmake.exe" ]]; then
+    CMAKE_BIN="${QT_ROOT}/bin/cmake.exe"
+fi
+
+if [[ -z "${CMAKE_BIN}" && -x "${MSYSTEM_PREFIX:-}/bin/cmake.exe" ]]; then
+    CMAKE_BIN="${MSYSTEM_PREFIX}/bin/cmake.exe"
+fi
+
+if [[ -z "${CMAKE_BIN}" ]]; then
+    CMAKE_BIN="$(command -v cmake || true)"
+fi
+
+if [[ -z "${CMAKE_BIN}" ]]; then
+    echo "cmake not found. Install mingw-w64-x86_64-cmake in the MSYS2 MinGW environment." >&2
+    exit 1
+fi
+
+case "${CMAKE_BIN}" in
+    /usr/bin/cmake|/usr/bin/cmake.exe)
+        echo "Detected MSYS cmake at ${CMAKE_BIN}, which generates /c/... paths that native Ninja cannot build." >&2
+        echo "Install mingw-w64-x86_64-cmake and rerun from the MSYS2 MinGW shell." >&2
+        echo "Expected cmake path example: /mingw64/bin/cmake.exe" >&2
+        exit 1
+        ;;
+esac
+
 export PATH="${QT_ROOT}/bin:${PATH}"
 
-cmake --preset "${CONFIGURE_PRESET}" \
+"${CMAKE_BIN}" --preset "${CONFIGURE_PRESET}" \
     -DCMAKE_PREFIX_PATH="${QT_ROOT}" \
     -DMPV_ROOT="${MPV_ROOT}" \
     -DMPV_LIBRARY="${MPV_LIBRARY}" \
     -DMPV_RUNTIME_DLL="${MPV_RUNTIME_DLL}"
 
-cmake --build --preset "${BUILD_PRESET}" --parallel
+"${CMAKE_BIN}" --build --preset "${BUILD_PRESET}" --parallel
 
 OUTPUT_DIR="${ROOT_DIR}/build/msys2-mingw64"
 EXECUTABLE_PATH="${OUTPUT_DIR}/lzc-player.exe"

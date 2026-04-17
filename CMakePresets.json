@@ -9,8 +9,8 @@
     {
       "name": "msys2-mingw64",
       "displayName": "MSYS2 MinGW64 Release",
-      "description": "Configure lzc-player for MSYS2 MinGW64 with Qt from MSYSTEM_PREFIX and local libmpv package.",
-      "generator": "MinGW Makefiles",
+      "description": "Configure lzc-player for MSYS2 MinGW64 with Ninja, Qt from MSYSTEM_PREFIX, and a local libmpv package.",
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/msys2-mingw64",
       "installDir": "${sourceDir}/dist/msys2-mingw64",
       "cacheVariables": {
