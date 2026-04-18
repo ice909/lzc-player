@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Lzc Player
+Comment=Play local and remote media with mpv and Qt
+Exec=lzc-player %f
+Icon=lzc-player
+Terminal=false
+Categories=AudioVideo;Player;Video;
+MimeType=video/mp4;video/x-matroska;video/x-msvideo;video/quicktime;audio/mpeg;audio/flac;
+Keywords=video;player;mpv;media;

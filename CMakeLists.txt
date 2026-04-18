@@ -155,6 +155,14 @@ install(TARGETS lzc-player
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
+install(FILES assets/linux/lzc-player.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+
+install(FILES assets/linux/lzc-player.svg
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+)
+
 if (WIN32 AND mpv_runtime_dll)
     install(FILES "${mpv_runtime_dll}"
         DESTINATION ${CMAKE_INSTALL_BINDIR}

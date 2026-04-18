@@ -87,3 +87,11 @@ squashfs-root
 dist/
 third_party/mpv/
 playlist.json
+*.deb
+*.build
+*.buildinfo
+*.changes
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/lzc-player/

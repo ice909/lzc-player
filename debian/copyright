@@ -1,0 +1,9 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: lzc-player
+Source: local
+
+Files: *
+Copyright: 2026 Unknown
+License: unspecified
+ No upstream license file was provided with this source tree. Review the
+ repository owner terms before redistributing generated packages.

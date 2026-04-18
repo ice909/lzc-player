@@ -1,0 +1,5 @@
+lzc-player (0.1) unstable; urgency=medium
+
+  * Initial Debian packaging.
+
+ -- Local Builder <builder@localhost>  Sat, 18 Apr 2026 20:00:00 +0800

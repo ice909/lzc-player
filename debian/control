@@ -1,0 +1,26 @@
+Source: lzc-player
+Section: video
+Priority: optional
+Maintainer: Local Builder <builder@localhost>
+Build-Depends:
+ debhelper-compat (= 13),
+ cmake,
+ ninja-build,
+ pkgconf,
+ libmpv-dev,
+ qt6-base-dev,
+ qt6-declarative-dev,
+ qt6-shadertools-dev,
+ libqt6opengl6-dev
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+
+Package: lzc-player
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends}
+Description: Qt and mpv based desktop media player
+ A lightweight desktop media player built with Qt Quick and libmpv.
+ It can open local files, remote URLs, and playlist payloads from the
+ command line.
