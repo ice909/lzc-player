@@ -42,6 +42,10 @@ void configureCommandLineParser(QCommandLineParser &parser)
         QStringLiteral("start"),
         QStringLiteral("Seek to given position on startup. Supports percent, seconds, or timestamps like 12:34 and 01:02:03."),
         QStringLiteral("time"));
+    const QCommandLineOption inputIpcServerOption(
+        QStringLiteral("input-ipc-server"),
+        QStringLiteral("Path to the mpv JSON IPC server socket."),
+        QStringLiteral("path"));
 
     parser.setApplicationDescription(
         QStringLiteral("Lzc video player\n"
@@ -57,6 +61,7 @@ void configureCommandLineParser(QCommandLineParser &parser)
     parser.addOption(playlistFileOption);
     parser.addOption(playlistJsonOption);
     parser.addOption(startOption);
+    parser.addOption(inputIpcServerOption);
     parser.addPositionalArgument(QStringLiteral("file"), QStringLiteral("Media file or URL to open."));
 }
 
@@ -170,6 +175,7 @@ int main(int argc, char **argv)
         : QString();
     const QString startupPosition = parser.value(QStringLiteral("start"));
     app.setProperty("lzcPlayerCookie", parser.value(QStringLiteral("cookie")));
+    app.setProperty("lzcPlayerInputIpcServer", parser.value(QStringLiteral("input-ipc-server")));
 
     std::setlocale(LC_NUMERIC, "C");
 

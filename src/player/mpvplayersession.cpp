@@ -39,7 +39,7 @@ void applyNetworkOptions(mpv_handle *mpv)
 
 void applyIpcServerOption(mpv_handle *mpv)
 {
-    const QString ipcServer = qEnvironmentVariable("LZCPLAYER_MPV_IPC");
+    const QString ipcServer = qApp->property("lzcPlayerInputIpcServer").toString();
     if (!ipcServer.isEmpty())
     {
         mpv_set_option_string(mpv, "input-ipc-server", ipcServer.toUtf8().constData());
