@@ -52,6 +52,59 @@ find_first_existing() {
     return 1
 }
 
+strip_dll_version_suffix() {
+    local dll_name="$1"
+    local stem="${dll_name%.dll}"
+
+    if [[ "${stem}" =~ ^(.+[^0-9])([0-9]+)$ ]]; then
+        printf '%s\n' "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    printf '%s\n' "${stem}"
+}
+
+find_version_flexible_file() {
+    local directory="$1"
+    local dll_name="$2"
+    local stem candidate
+
+    if [[ -f "${directory}/${dll_name}" ]]; then
+        printf '%s\n' "${directory}/${dll_name}"
+        return 0
+    fi
+
+    stem="$(strip_dll_version_suffix "${dll_name}")"
+    if [[ "${stem}" == "${dll_name%.dll}" ]]; then
+        return 1
+    fi
+
+    for candidate in "${directory}/${stem}"*.dll; do
+        if [[ -f "${candidate}" ]]; then
+            printf '%s\n' "${candidate}"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+find_runtime_dll() {
+    local dll_name="$1"
+    shift
+
+    local directory path
+    for directory in "$@"; do
+        path="$(find_version_flexible_file "${directory}" "${dll_name}" || true)"
+        if [[ -n "${path}" ]]; then
+            printf '%s\n' "${path}"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 copy_if_exists() {
     local source="$1"
     local target_dir="$2"
@@ -72,6 +125,27 @@ copy_dir_if_exists() {
     target_path="${target_dir}/$(basename "${source}")"
     rm -rf "${target_path}"
     cp -R "${source}" "${target_dir}/"
+}
+
+find_qt_plugin_root() {
+    find_first_existing \
+        "${QT_ROOT}/plugins" \
+        "${QT_ROOT}/share/qt6/plugins" \
+        "${QT_ROOT}/lib/qt6/plugins"
+}
+
+copy_qt_svg_runtime() {
+    local target_dir="$1"
+    local plugin_root="$2"
+    local imageformats_dir="${target_dir}/imageformats"
+
+    mkdir -p "${imageformats_dir}"
+
+    copy_if_exists "${plugin_root}/imageformats/qsvg.dll" "${imageformats_dir}"
+    copy_if_exists "${plugin_root}/imageformats/qsvgicon.dll" "${imageformats_dir}"
+    copy_if_exists "${QT_ROOT}/bin/Qt6Svg.dll" "${target_dir}"
+    copy_if_exists "${QT_ROOT}/bin/Qt6SvgWidgets.dll" "${target_dir}"
+    copy_if_exists "${QT_ROOT}/bin/Qt6Xml.dll" "${target_dir}"
 }
 
 find_qml_import_root() {
@@ -126,10 +200,11 @@ copy_mpv_runtime_whitelist() {
     local dll_name source_path
 
     for dll_name in "${MPV_RUNTIME_DLL_NAMES[@]}"; do
-        source_path="$(find_first_existing \
-            "${QT_ROOT}/bin/${dll_name}" \
-            "${MPV_ROOT}/bin/${dll_name}" \
-            "${MPV_ROOT}/${dll_name}")"
+        source_path="$(find_runtime_dll \
+            "${dll_name}" \
+            "${QT_ROOT}/bin" \
+            "${MPV_ROOT}/bin" \
+            "${MPV_ROOT}" || true)"
         if [[ -n "${source_path:-}" ]]; then
             copy_if_exists "${source_path}" "${target_dir}"
         fi
@@ -143,6 +218,7 @@ fi
 
 export PATH="${QT_ROOT}/share/qt6/bin:${QT_ROOT}/bin:${MPV_ROOT}/bin:${MPV_ROOT}:${BUILD_DIR}:${PATH}"
 QML_IMPORT_ROOT="$(find_qml_import_root || true)"
+QT_PLUGIN_ROOT="$(find_qt_plugin_root || true)"
 
 if [[ "${RUN_BUILD}" != "0" ]]; then
     bash "${ROOT_DIR}/scripts/build-msys2.sh"
@@ -189,6 +265,14 @@ if [[ -n "${QML_IMPORT_ROOT}" ]]; then
     copy_qml_runtime_modules "${PACKAGE_DIR}" "${QML_IMPORT_ROOT}"
 else
     echo "Qt QML import root not found under ${QT_ROOT}; skipping manual QML runtime copy." >&2
+fi
+
+if [[ -n "${QT_PLUGIN_ROOT}" ]]; then
+    # The control bar icons are SVG assets loaded via QML Image, so the SVG imageformat plugin
+    # must be present on Windows even when windeployqt does not detect it automatically.
+    copy_qt_svg_runtime "${PACKAGE_DIR}" "${QT_PLUGIN_ROOT}"
+else
+    echo "Qt plugin root not found under ${QT_ROOT}; skipping manual SVG runtime copy." >&2
 fi
 
 copy_if_exists "${QT_ROOT}/bin/libstdc++-6.dll" "${PACKAGE_DIR}"
