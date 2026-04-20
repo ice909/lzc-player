@@ -8,6 +8,8 @@ APPDIR="${APPDIR:-/tmp/${APP_NAME}.AppDir}"
 OUTPUT_DIR="${OUTPUT_DIR:-/output}"
 QT_ROOT="${QT_ROOT:-/opt/Qt/6.8.2/gcc_64}"
 APPIMAGETOOL_BIN="${APPIMAGETOOL_BIN:-/usr/local/bin/appimagetool}"
+APPIMAGETOOL_URL="${APPIMAGETOOL_URL:-https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage}"
+APPIMAGETOOL_DOWNLOAD_PATH="${APPIMAGETOOL_DOWNLOAD_PATH:-/tmp/appimagetool-x86_64.AppImage}"
 
 export PATH="${QT_ROOT}/bin:${PATH}"
 export CMAKE_PREFIX_PATH="${QT_ROOT}:${CMAKE_PREFIX_PATH:-}"
@@ -24,10 +26,27 @@ if [[ ! -x /usr/local/bin/linuxdeployqt ]]; then
     exit 1
 fi
 
-if [[ ! -x "${APPIMAGETOOL_BIN}" ]]; then
-    echo "appimagetool not found at ${APPIMAGETOOL_BIN}" >&2
-    exit 1
-fi
+ensure_appimagetool() {
+    if [[ -x "${APPIMAGETOOL_BIN}" ]]; then
+        return
+    fi
+
+    echo "appimagetool not found at ${APPIMAGETOOL_BIN}, downloading from ${APPIMAGETOOL_URL}" >&2
+
+    mkdir -p "$(dirname "${APPIMAGETOOL_DOWNLOAD_PATH}")"
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -fL "${APPIMAGETOOL_URL}" -o "${APPIMAGETOOL_DOWNLOAD_PATH}"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -O "${APPIMAGETOOL_DOWNLOAD_PATH}" "${APPIMAGETOOL_URL}"
+    else
+        echo "Neither curl nor wget is available to download appimagetool." >&2
+        exit 1
+    fi
+
+    chmod +x "${APPIMAGETOOL_DOWNLOAD_PATH}"
+    APPIMAGETOOL_BIN="${APPIMAGETOOL_DOWNLOAD_PATH}"
+}
 
 qt_plugin_dir() {
     if [[ -d "${QT_ROOT}/plugins" ]]; then
@@ -120,6 +139,8 @@ prune_problematic_runtime_libs() {
 build_appimage() {
     (cd /tmp && "${APPIMAGETOOL_BIN}" "${APPDIR}")
 }
+
+ensure_appimagetool
 
 rm -rf "${BUILD_DIR}" "${APPDIR}"
 cmake -S /src -B "${BUILD_DIR}" -G Ninja \
