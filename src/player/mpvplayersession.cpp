@@ -85,6 +85,7 @@ MpvPlayerSession::MpvPlayerSession(QObject *parent)
       m_fileLoading(false),
       m_buffering(false),
       m_seeking(false),
+      m_hasMedia(false),
       m_bufferingProgress(0.0),
       m_playbackSpeed(1.0),
       m_volume(100.0),
@@ -174,6 +175,11 @@ bool MpvPlayerSession::seeking() const
     return m_seeking;
 }
 
+bool MpvPlayerSession::hasMedia() const
+{
+    return m_hasMedia;
+}
+
 double MpvPlayerSession::bufferingProgress() const
 {
     return m_bufferingProgress;
@@ -239,6 +245,7 @@ void MpvPlayerSession::loadFile(const QString &path)
     setBufferEnd(0.0);
     setBuffering(false);
     setSeeking(false);
+    setHasMedia(true);
     setBufferingProgress(0.0);
     setFileLoading(true);
     setPaused(false);
@@ -939,6 +946,17 @@ void MpvPlayerSession::setSeeking(bool seeking)
     m_seeking = seeking;
     emit seekingChanged();
     updateLoadingState();
+}
+
+void MpvPlayerSession::setHasMedia(bool hasMedia)
+{
+    if (m_hasMedia == hasMedia)
+    {
+        return;
+    }
+
+    m_hasMedia = hasMedia;
+    emit hasMediaChanged();
 }
 
 void MpvPlayerSession::setBufferingProgress(double progress)

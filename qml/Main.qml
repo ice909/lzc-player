@@ -34,6 +34,12 @@ Item {
     readonly property bool overlayOpen: controlsBar.overlayOpen
 
     function syncControlsVisibility() {
+        if (!renderer.hasMedia) {
+            controlsVisible = false
+            hideControlsTimer.stop()
+            return
+        }
+
         if (renderer.consoleOpen) {
             controlsVisible = false
             hideControlsTimer.stop()
@@ -50,6 +56,12 @@ Item {
     }
 
     function showControlsTemporarily() {
+        if (!renderer.hasMedia) {
+            controlsVisible = false
+            hideControlsTimer.stop()
+            return
+        }
+
         if (renderer.consoleOpen) {
             controlsVisible = false
             hideControlsTimer.stop()
@@ -238,7 +250,7 @@ Item {
         interval: 1800
         repeat: false
         onTriggered: {
-            if (renderer.playing && !overlayOpen) {
+            if (renderer.hasMedia && renderer.playing && !overlayOpen) {
                 controlsVisible = false
             }
         }
@@ -259,6 +271,10 @@ Item {
         target: renderer
 
         function onPlayingChanged() {
+            syncControlsVisibility()
+        }
+
+        function onHasMediaChanged() {
             syncControlsVisibility()
         }
 
@@ -298,7 +314,7 @@ Item {
     Shortcut {
         sequence: "Space"
         context: Qt.ApplicationShortcut
-        enabled: !renderer.consoleOpen
+        enabled: renderer.hasMedia && !renderer.consoleOpen
         onActivated: renderer.togglePause()
     }
 
@@ -400,6 +416,7 @@ Item {
 
     PlaybackControlsBar {
         id: controlsBar
+        visible: renderer.hasMedia
         renderer: renderer
         hostWindow: mainView.hostWindow
         controlsVisible: parent.controlsVisible

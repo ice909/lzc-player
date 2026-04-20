@@ -178,6 +178,7 @@ MpvPlayerView::MpvPlayerView(QQuickItem *parent)
     connect(m_session, &MpvPlayerSession::loadingChanged, this, &MpvPlayerView::loadingChanged);
     connect(m_session, &MpvPlayerSession::bufferingChanged, this, &MpvPlayerView::bufferingChanged);
     connect(m_session, &MpvPlayerSession::seekingChanged, this, &MpvPlayerView::seekingChanged);
+    connect(m_session, &MpvPlayerSession::hasMediaChanged, this, &MpvPlayerView::hasMediaChanged);
     connect(m_session, &MpvPlayerSession::bufferingProgressChanged, this, &MpvPlayerView::bufferingProgressChanged);
     connect(m_session, &MpvPlayerSession::playbackSpeedChanged, this, &MpvPlayerView::playbackSpeedChanged);
     connect(m_session, &MpvPlayerSession::volumeChanged, this, &MpvPlayerView::volumeChanged);
@@ -244,6 +245,11 @@ bool MpvPlayerView::buffering() const
 bool MpvPlayerView::seeking() const
 {
     return m_session->seeking();
+}
+
+bool MpvPlayerView::hasMedia() const
+{
+    return m_session->hasMedia();
 }
 
 double MpvPlayerView::bufferingProgress() const

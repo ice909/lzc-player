@@ -23,6 +23,7 @@ class MpvPlayerView : public QQuickFramebufferObject
     Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
     Q_PROPERTY(bool buffering READ buffering NOTIFY bufferingChanged)
     Q_PROPERTY(bool seeking READ seeking NOTIFY seekingChanged)
+    Q_PROPERTY(bool hasMedia READ hasMedia NOTIFY hasMediaChanged)
     Q_PROPERTY(double bufferingProgress READ bufferingProgress NOTIFY bufferingProgressChanged)
     Q_PROPERTY(double playbackSpeed READ playbackSpeed NOTIFY playbackSpeedChanged)
     Q_PROPERTY(double volume READ volume NOTIFY volumeChanged)
@@ -55,6 +56,7 @@ public:
     bool loading() const;
     bool buffering() const;
     bool seeking() const;
+    bool hasMedia() const;
     double bufferingProgress() const;
     double playbackSpeed() const;
     double volume() const;
@@ -98,6 +100,7 @@ signals:
     void loadingChanged();
     void bufferingChanged();
     void seekingChanged();
+    void hasMediaChanged();
     void bufferingProgressChanged();
     void playbackSpeedChanged();
     void volumeChanged();
