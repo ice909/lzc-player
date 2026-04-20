@@ -51,6 +51,16 @@ void setApplicationMetadata()
     QCoreApplication::setApplicationVersion(QString::fromLatin1(LZC_PLAYER_VERSION));
 }
 
+void configureQtQuickControlsStyle()
+{
+#ifdef Q_OS_WIN
+    if (!qEnvironmentVariableIsSet("QT_QUICK_CONTROLS_STYLE"))
+    {
+        qputenv("QT_QUICK_CONTROLS_STYLE", QByteArrayLiteral("Basic"));
+    }
+#endif
+}
+
 QString messageTypeName(QtMsgType type)
 {
     switch (type)
@@ -473,10 +483,13 @@ int main(int argc, char **argv)
             parser.process(app);
         }
 
+        configureQtQuickControlsStyle();
         QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
         QApplication app(argc, argv);
         setApplicationMetadata();
         installFileLogging();
+        qInfo().noquote() << "Qt Quick Controls style:"
+                          << qEnvironmentVariable("QT_QUICK_CONTROLS_STYLE", QStringLiteral("Basic"));
 
         QCommandLineParser parser;
         configureCommandLineParser(parser);
