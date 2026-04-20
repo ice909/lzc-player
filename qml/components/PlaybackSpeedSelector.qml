@@ -7,7 +7,7 @@ import "../utils/PlayerFormat.js" as PlayerFormat
 Item {
     id: speedSelector
 
-    required property var renderer
+    required property var player
     required property var playbackSpeedOptions
     required property real reservedWidth
     readonly property bool panelVisible: speedPopup.visible
@@ -53,7 +53,7 @@ Item {
                 delegate: Rectangle {
                     required property var modelData
                     readonly property bool selected: PlayerFormat.playbackSpeedMatches(
-                        speedSelector.renderer.playbackSpeed,
+                        speedSelector.player.playbackSpeed,
                         modelData.value
                     )
 
@@ -91,7 +91,7 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            speedSelector.renderer.setPlaybackSpeed(parent.modelData.value)
+                            speedSelector.player.setPlaybackSpeed(parent.modelData.value)
                             speedPopup.close()
                         }
                     }
@@ -124,7 +124,7 @@ Item {
             id: speedButtonLabel
             anchors.centerIn: parent
             text: PlayerFormat.playbackSpeedButtonText(
-                speedSelector.renderer.playbackSpeed,
+                speedSelector.player.playbackSpeed,
                 speedSelector.playbackSpeedOptions
             )
             color: "#CBD5E0"

@@ -9,7 +9,7 @@
 #include <atomic>
 
 class PlayerWindow;
-class MpvPlayerView;
+class VideoPlayerView;
 
 class MpvWindowRenderer : public QObject
 {
@@ -19,7 +19,7 @@ public:
     explicit MpvWindowRenderer(PlayerWindow *window);
     ~MpvWindowRenderer() override;
 
-    void setView(MpvPlayerView *view);
+    void setView(VideoPlayerView *view);
     void scheduleFrameUpdate();
 
 private slots:
@@ -35,7 +35,7 @@ private:
     static void destroyRenderContext(mpv_render_context *renderContext);
 
     PlayerWindow *m_window;
-    QPointer<MpvPlayerView> m_view;
+    QPointer<VideoPlayerView> m_view;
     mpv_handle *m_mpv;
     mpv_render_context *m_renderContext;
     bool m_renderContextReady;

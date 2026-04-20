@@ -13,7 +13,7 @@
 #include <mpv/render_gl.h>
 
 #include "src/app/playerwindow.h"
-#include "src/player/mpvplayerview.h"
+#include "src/player/videoplayerview.h"
 
 namespace
 {
@@ -61,7 +61,7 @@ MpvWindowRenderer::~MpvWindowRenderer()
     releaseResources();
 }
 
-void MpvWindowRenderer::setView(MpvPlayerView *view)
+void MpvWindowRenderer::setView(VideoPlayerView *view)
 {
     if (m_view == view)
     {
@@ -226,7 +226,7 @@ void MpvWindowRenderer::markRenderContextReady()
     }
 
     m_renderContextReady = true;
-    QMetaObject::invokeMethod(m_view, &MpvPlayerView::markRenderContextReady, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(m_view, &VideoPlayerView::markRenderContextReady, Qt::QueuedConnection);
 }
 
 mpv_render_context *MpvWindowRenderer::takeRenderContext()

@@ -7,7 +7,7 @@ import QtQml
 import "components"
 import "utils/PlayerFormat.js" as PlayerFormat
 
-import mpvtest 1.0
+import LzcPlayer 1.0
 
 Item {
     id: mainView
@@ -17,7 +17,7 @@ Item {
 
     readonly property var hostWindow: Window.window
     property bool controlsVisible: true
-    property bool loadingOverlayActive: renderer.loading
+    property bool loadingOverlayActive: videoPlayer.loading
     readonly property var playbackSpeedOptions: [
         { value: 2.0, label: "2.0x" },
         { value: 1.75, label: "1.75x" },
@@ -36,22 +36,22 @@ Item {
         (initialPlaylist && initialPlaylist.length > 0) || !!initialFile
     property bool entryConsumed: startupHasSource
     readonly property bool emptyStateVisible:
-        !entryConsumed && !renderer.hasMedia && !renderer.loading
+        !entryConsumed && !videoPlayer.hasMedia && !videoPlayer.loading
 
     function syncControlsVisibility() {
-        if (!renderer.hasMedia) {
+        if (!videoPlayer.hasMedia) {
             controlsVisible = false
             hideControlsTimer.stop()
             return
         }
 
-        if (renderer.consoleOpen) {
+        if (videoPlayer.consoleOpen) {
             controlsVisible = false
             hideControlsTimer.stop()
             return
         }
 
-        if (!renderer.playing || overlayOpen) {
+        if (!videoPlayer.playing || overlayOpen) {
             controlsVisible = true
             hideControlsTimer.stop()
             return
@@ -61,13 +61,13 @@ Item {
     }
 
     function showControlsTemporarily() {
-        if (!renderer.hasMedia) {
+        if (!videoPlayer.hasMedia) {
             controlsVisible = false
             hideControlsTimer.stop()
             return
         }
 
-        if (renderer.consoleOpen) {
+        if (videoPlayer.consoleOpen) {
             controlsVisible = false
             hideControlsTimer.stop()
             return
@@ -96,8 +96,8 @@ Item {
         }
 
         entryConsumed = true
-        renderer.setPlaylistItems([])
-        renderer.loadFile(resolvedPath)
+        videoPlayer.setPlaylistItems([])
+        videoPlayer.loadFile(resolvedPath)
         ensureKeyboardFocus()
     }
 
@@ -129,23 +129,23 @@ Item {
         text: "1080P"
     }
 
-    MpvPlayerView {
-        id: renderer
-        objectName: "renderer"
+    VideoPlayerView {
+        id: videoPlayer
+        objectName: "videoPlayer"
         anchors.fill: parent
 
         Component.onCompleted: {
             mainView.ensureKeyboardFocus()
 
             if (initialStartPosition) {
-                renderer.setStartupPosition(initialStartPosition)
+                videoPlayer.setStartupPosition(initialStartPosition)
             }
 
             if (initialPlaylist && initialPlaylist.length > 0) {
-                renderer.setPlaylistItems(initialPlaylist)
-                renderer.playEpisode(0)
+                videoPlayer.setPlaylistItems(initialPlaylist)
+                videoPlayer.playEpisode(0)
             } else if (initialFile) {
-                renderer.loadFile(initialFile)
+                videoPlayer.loadFile(initialFile)
             }
         }
     }
@@ -154,7 +154,7 @@ Item {
         anchors.fill: parent
         color: "#000000"
         z: -1
-        visible: !renderer.hasMedia
+        visible: !videoPlayer.hasMedia
     }
 
     Item {
@@ -164,7 +164,7 @@ Item {
         height: 58
         z: 3
         visible: loadingOverlayActive || opacity > 0
-        opacity: renderer.loading ? 1 : 0
+        opacity: videoPlayer.loading ? 1 : 0
         enabled: false
 
         Behavior on opacity {
@@ -221,7 +221,7 @@ Item {
     }
 
     Rectangle {
-        visible: renderer.hasMedia
+        visible: videoPlayer.hasMedia
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.topMargin: 18
@@ -245,12 +245,12 @@ Item {
                 width: 8
                 height: 8
                 radius: 4
-                color: renderer.networkSpeed > 0 ? "#7EA8FF" : "#5A657F"
+                color: videoPlayer.networkSpeed > 0 ? "#7EA8FF" : "#5A657F"
             }
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: PlayerFormat.formatNetworkSpeed(renderer.networkSpeed)
+                text: PlayerFormat.formatNetworkSpeed(videoPlayer.networkSpeed)
                 color: "#F3F6FF"
                 font.pixelSize: 13
                 font.weight: Font.Medium
@@ -322,7 +322,7 @@ Item {
         interval: 1800
         repeat: false
         onTriggered: {
-            if (renderer.hasMedia && renderer.playing && !overlayOpen) {
+            if (videoPlayer.hasMedia && videoPlayer.playing && !overlayOpen) {
                 controlsVisible = false
             }
         }
@@ -333,14 +333,14 @@ Item {
         interval: 140
         repeat: false
         onTriggered: {
-            if (!renderer.loading) {
+            if (!videoPlayer.loading) {
                 loadingOverlayActive = false
             }
         }
     }
 
     Connections {
-        target: renderer
+        target: videoPlayer
 
         function onPlayingChanged() {
             syncControlsVisibility()
@@ -351,7 +351,7 @@ Item {
         }
 
         function onLoadingChanged() {
-            if (renderer.loading) {
+            if (videoPlayer.loading) {
                 loadingOverlayHideTimer.stop()
                 loadingOverlayActive = true
                 return
@@ -361,7 +361,7 @@ Item {
         }
 
         function onConsoleOpenChanged() {
-            if (renderer.consoleOpen) {
+            if (videoPlayer.consoleOpen) {
                 mainView.ensureKeyboardFocus()
             }
         }
@@ -384,29 +384,29 @@ Item {
     Shortcut {
         sequence: "MediaNext"
         context: Qt.ApplicationShortcut
-        enabled: renderer.hasPlaylist && !renderer.consoleOpen
-        onActivated: renderer.playNextEpisode()
+        enabled: videoPlayer.hasPlaylist && !videoPlayer.consoleOpen
+        onActivated: videoPlayer.playNextEpisode()
     }
 
     Shortcut {
         sequence: "MediaPrevious"
         context: Qt.ApplicationShortcut
-        enabled: renderer.hasPlaylist && !renderer.consoleOpen
-        onActivated: renderer.playPrevEpisode()
+        enabled: videoPlayer.hasPlaylist && !videoPlayer.consoleOpen
+        onActivated: videoPlayer.playPrevEpisode()
     }
 
     Shortcut {
         sequence: "Space"
         context: Qt.ApplicationShortcut
-        enabled: renderer.hasMedia && !renderer.consoleOpen
-        onActivated: renderer.togglePause()
+        enabled: videoPlayer.hasMedia && !videoPlayer.consoleOpen
+        onActivated: videoPlayer.togglePause()
     }
 
     Shortcut {
         sequence: "I"
         context: Qt.ApplicationShortcut
-        enabled: !renderer.consoleOpen
-        onActivated: renderer.command([
+        enabled: !videoPlayer.consoleOpen
+        onActivated: videoPlayer.command([
             "script-binding",
             "stats/display-stats-toggle"
         ])
@@ -415,7 +415,7 @@ Item {
     Shortcut {
         sequence: "`"
         context: Qt.ApplicationShortcut
-        onActivated: renderer.command([
+        onActivated: videoPlayer.command([
             "script-binding",
             "commands/open"
         ])
@@ -425,8 +425,8 @@ Item {
         sequence: "Esc"
         context: Qt.ApplicationShortcut
         onActivated: {
-            if (renderer.consoleOpen) {
-                renderer.command([
+            if (videoPlayer.consoleOpen) {
+                videoPlayer.command([
                     "keypress",
                     "ESC"
                 ])
@@ -435,7 +435,7 @@ Item {
     }
 
     Keys.onPressed: (event) => {
-        if (!renderer.consoleOpen) {
+        if (!videoPlayer.consoleOpen) {
             return
         }
 
@@ -445,63 +445,63 @@ Item {
         }
 
         if (event.key === Qt.Key_Backspace) {
-            renderer.command(["keypress", "BS"])
+            videoPlayer.command(["keypress", "BS"])
             event.accepted = true
             return
         }
 
         if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            renderer.command(["keypress", "ENTER"])
+            videoPlayer.command(["keypress", "ENTER"])
             event.accepted = true
             return
         }
 
         if (event.key === Qt.Key_Tab) {
-            renderer.command(["keypress", "TAB"])
+            videoPlayer.command(["keypress", "TAB"])
             event.accepted = true
             return
         }
 
         if (event.key === Qt.Key_Space) {
-            renderer.command(["keypress", "SPACE"])
+            videoPlayer.command(["keypress", "SPACE"])
             event.accepted = true
             return
         }
 
         if (event.key === Qt.Key_Left) {
-            renderer.command(["keypress", "LEFT"])
+            videoPlayer.command(["keypress", "LEFT"])
             event.accepted = true
             return
         }
 
         if (event.key === Qt.Key_Right) {
-            renderer.command(["keypress", "RIGHT"])
+            videoPlayer.command(["keypress", "RIGHT"])
             event.accepted = true
             return
         }
 
         if (event.key === Qt.Key_Up) {
-            renderer.command(["keypress", "UP"])
+            videoPlayer.command(["keypress", "UP"])
             event.accepted = true
             return
         }
 
         if (event.key === Qt.Key_Down) {
-            renderer.command(["keypress", "DOWN"])
+            videoPlayer.command(["keypress", "DOWN"])
             event.accepted = true
             return
         }
 
         if (event.text && event.text.length > 0 && event.text >= " ") {
-            renderer.command(["keypress", event.text])
+            videoPlayer.command(["keypress", event.text])
             event.accepted = true
         }
     }
 
     PlaybackControlsBar {
         id: controlsBar
-        visible: renderer.hasMedia
-        renderer: renderer
+        visible: videoPlayer.hasMedia
+        player: videoPlayer
         hostWindow: mainView.hostWindow
         controlsVisible: parent.controlsVisible
         playbackSpeedOptions: parent.playbackSpeedOptions

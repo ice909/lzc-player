@@ -5,7 +5,7 @@ import "../utils/PlayerFormat.js" as PlayerFormat
 Item {
     id: qualitySelector
 
-    required property var renderer
+    required property var player
     required property real reservedWidth
     readonly property bool panelVisible: qualityPopup.visible
 
@@ -37,7 +37,7 @@ Item {
         Text {
             id: qualityButtonLabel
             anchors.centerIn: parent
-            text: PlayerFormat.qualityButtonText(qualitySelector.renderer.qualityLabel)
+            text: PlayerFormat.qualityButtonText(qualitySelector.player.qualityLabel)
             color: "#CBD5E0"
             font.pixelSize: 14
             font.weight: Font.Medium
@@ -83,11 +83,11 @@ Item {
             spacing: 4
 
             Repeater {
-                model: qualitySelector.renderer.videoTracks
+                model: qualitySelector.player.videoTracks
 
                 delegate: Rectangle {
                     required property var modelData
-                    readonly property bool selected: qualitySelector.renderer.videoId === modelData.id
+                    readonly property bool selected: qualitySelector.player.videoId === modelData.id
 
                     width: parent.width
                     height: 32
@@ -120,7 +120,7 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            qualitySelector.renderer.setVideoId(parent.modelData.id)
+                            qualitySelector.player.setVideoId(parent.modelData.id)
                             qualityPopup.close()
                         }
                     }

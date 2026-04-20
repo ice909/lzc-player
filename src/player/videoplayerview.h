@@ -1,5 +1,5 @@
-#ifndef LZC_PLAYER_MPVPLAYERVIEW_H_
-#define LZC_PLAYER_MPVPLAYERVIEW_H_
+#ifndef LZC_PLAYER_VIDEOPLAYERVIEW_H_
+#define LZC_PLAYER_VIDEOPLAYERVIEW_H_
 
 #include <QtQuick/QQuickItem>
 #include <mpv/client.h>
@@ -12,7 +12,7 @@ class MpvPlayerSession;
 class PlayerWindow;
 class QQuickWindow;
 
-class MpvPlayerView : public QQuickItem
+class VideoPlayerView : public QQuickItem
 {
     Q_OBJECT
     Q_PROPERTY(bool playing READ isPlaying NOTIFY playingChanged)
@@ -40,8 +40,8 @@ class MpvPlayerView : public QQuickItem
     Q_PROPERTY(bool hasPlaylist READ hasPlaylist NOTIFY playlistItemsChanged)
 
 public:
-    explicit MpvPlayerView(QQuickItem *parent = nullptr);
-    ~MpvPlayerView() override;
+    explicit VideoPlayerView(QQuickItem *parent = nullptr);
+    ~VideoPlayerView() override;
 
     mpv_handle *mpvHandle() const;
     void markRenderContextReady();

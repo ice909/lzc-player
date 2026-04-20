@@ -3,7 +3,7 @@
 
 #include <QQuickView>
 
-class MpvPlayerView;
+class VideoPlayerView;
 class MpvWindowRenderer;
 class QDragEnterEvent;
 class QDragLeaveEvent;
@@ -23,8 +23,8 @@ public:
 
     bool dropActive() const;
     Q_INVOKABLE void openSystemFileDialog();
-    void setVideoView(MpvPlayerView *view);
-    void clearVideoView(MpvPlayerView *view);
+    void setVideoView(VideoPlayerView *view);
+    void clearVideoView(VideoPlayerView *view);
 
 signals:
     void dropActiveChanged();
@@ -38,7 +38,7 @@ private:
     QString firstDroppedFile(const QMimeData *mimeData) const;
     void setDropActive(bool active);
 
-    MpvPlayerView *m_videoView;
+    VideoPlayerView *m_videoView;
     MpvWindowRenderer *m_videoRenderer;
     bool m_dropActive;
 };

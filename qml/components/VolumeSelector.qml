@@ -6,7 +6,7 @@ import "../utils/PlayerFormat.js" as PlayerFormat
 Item {
     id: volumeSelector
 
-    required property var renderer
+    required property var player
     readonly property bool panelVisible: volumePopup.visible
 
     implicitWidth: 24
@@ -49,8 +49,8 @@ Item {
             anchors.bottomMargin: 12
             width: 28
             property bool dragging: false
-            property real previewValue: volumeSelector.renderer.volume
-            readonly property real shownValue: dragging ? previewValue : volumeSelector.renderer.volume
+            property real previewValue: volumeSelector.player.volume
+            readonly property real shownValue: dragging ? previewValue : volumeSelector.player.volume
             readonly property real progress: Math.max(0, Math.min(1, shownValue / 100))
 
             function updateFromPosition(positionY) {
@@ -108,13 +108,13 @@ Item {
                     onPressed: (mouse) => {
                         volumeBar.dragging = true
                         volumeBar.updateFromPosition(mouse.y)
-                        volumeSelector.renderer.setVolume(volumeBar.previewValue)
+                        volumeSelector.player.setVolume(volumeBar.previewValue)
                     }
 
                     onPositionChanged: (mouse) => {
                         if (pressed) {
                             volumeBar.updateFromPosition(mouse.y)
-                            volumeSelector.renderer.setVolume(volumeBar.previewValue)
+                            volumeSelector.player.setVolume(volumeBar.previewValue)
                         }
                     }
 
@@ -156,7 +156,7 @@ Item {
             fillMode: Image.PreserveAspectFit
             smooth: true
             mipmap: true
-            source: PlayerFormat.volumeIconSource(volumeSelector.renderer.volume)
+            source: PlayerFormat.volumeIconSource(volumeSelector.player.volume)
         }
     }
 }

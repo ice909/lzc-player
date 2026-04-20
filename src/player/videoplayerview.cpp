@@ -1,11 +1,11 @@
-#include "src/player/mpvplayerview.h"
+#include "src/player/videoplayerview.h"
 
 #include <QQuickWindow>
 
 #include "src/app/playerwindow.h"
 #include "src/player/mpvplayersession.h"
 
-MpvPlayerView::MpvPlayerView(QQuickItem *parent)
+VideoPlayerView::VideoPlayerView(QQuickItem *parent)
     : QQuickItem(parent),
       m_session(new MpvPlayerSession(this)),
       m_registeredWindow(nullptr),
@@ -14,150 +14,150 @@ MpvPlayerView::MpvPlayerView(QQuickItem *parent)
 {
     setFlag(QQuickItem::ItemHasContents, false);
 
-    connect(this, &QQuickItem::windowChanged, this, &MpvPlayerView::handleWindowChanged);
-    connect(m_session, &MpvPlayerSession::playbackFinished, this, &MpvPlayerView::handlePlaybackFinished);
-    connect(m_session, &MpvPlayerSession::playingChanged, this, &MpvPlayerView::playingChanged);
-    connect(m_session, &MpvPlayerSession::timePosChanged, this, &MpvPlayerView::timePosChanged);
-    connect(m_session, &MpvPlayerSession::durationChanged, this, &MpvPlayerView::durationChanged);
-    connect(m_session, &MpvPlayerSession::bufferDurationChanged, this, &MpvPlayerView::bufferDurationChanged);
-    connect(m_session, &MpvPlayerSession::bufferEndChanged, this, &MpvPlayerView::bufferEndChanged);
-    connect(m_session, &MpvPlayerSession::networkSpeedChanged, this, &MpvPlayerView::networkSpeedChanged);
-    connect(m_session, &MpvPlayerSession::loadingChanged, this, &MpvPlayerView::loadingChanged);
-    connect(m_session, &MpvPlayerSession::bufferingChanged, this, &MpvPlayerView::bufferingChanged);
-    connect(m_session, &MpvPlayerSession::seekingChanged, this, &MpvPlayerView::seekingChanged);
-    connect(m_session, &MpvPlayerSession::hasMediaChanged, this, &MpvPlayerView::hasMediaChanged);
-    connect(m_session, &MpvPlayerSession::bufferingProgressChanged, this, &MpvPlayerView::bufferingProgressChanged);
-    connect(m_session, &MpvPlayerSession::playbackSpeedChanged, this, &MpvPlayerView::playbackSpeedChanged);
-    connect(m_session, &MpvPlayerSession::volumeChanged, this, &MpvPlayerView::volumeChanged);
-    connect(m_session, &MpvPlayerSession::qualityLabelChanged, this, &MpvPlayerView::qualityLabelChanged);
-    connect(m_session, &MpvPlayerSession::videoTracksChanged, this, &MpvPlayerView::videoTracksChanged);
-    connect(m_session, &MpvPlayerSession::videoIdChanged, this, &MpvPlayerView::videoIdChanged);
-    connect(m_session, &MpvPlayerSession::subtitleTracksChanged, this, &MpvPlayerView::subtitleTracksChanged);
-    connect(m_session, &MpvPlayerSession::subtitleIdChanged, this, &MpvPlayerView::subtitleIdChanged);
-    connect(m_session, &MpvPlayerSession::consoleOpenChanged, this, &MpvPlayerView::consoleOpenChanged);
+    connect(this, &QQuickItem::windowChanged, this, &VideoPlayerView::handleWindowChanged);
+    connect(m_session, &MpvPlayerSession::playbackFinished, this, &VideoPlayerView::handlePlaybackFinished);
+    connect(m_session, &MpvPlayerSession::playingChanged, this, &VideoPlayerView::playingChanged);
+    connect(m_session, &MpvPlayerSession::timePosChanged, this, &VideoPlayerView::timePosChanged);
+    connect(m_session, &MpvPlayerSession::durationChanged, this, &VideoPlayerView::durationChanged);
+    connect(m_session, &MpvPlayerSession::bufferDurationChanged, this, &VideoPlayerView::bufferDurationChanged);
+    connect(m_session, &MpvPlayerSession::bufferEndChanged, this, &VideoPlayerView::bufferEndChanged);
+    connect(m_session, &MpvPlayerSession::networkSpeedChanged, this, &VideoPlayerView::networkSpeedChanged);
+    connect(m_session, &MpvPlayerSession::loadingChanged, this, &VideoPlayerView::loadingChanged);
+    connect(m_session, &MpvPlayerSession::bufferingChanged, this, &VideoPlayerView::bufferingChanged);
+    connect(m_session, &MpvPlayerSession::seekingChanged, this, &VideoPlayerView::seekingChanged);
+    connect(m_session, &MpvPlayerSession::hasMediaChanged, this, &VideoPlayerView::hasMediaChanged);
+    connect(m_session, &MpvPlayerSession::bufferingProgressChanged, this, &VideoPlayerView::bufferingProgressChanged);
+    connect(m_session, &MpvPlayerSession::playbackSpeedChanged, this, &VideoPlayerView::playbackSpeedChanged);
+    connect(m_session, &MpvPlayerSession::volumeChanged, this, &VideoPlayerView::volumeChanged);
+    connect(m_session, &MpvPlayerSession::qualityLabelChanged, this, &VideoPlayerView::qualityLabelChanged);
+    connect(m_session, &MpvPlayerSession::videoTracksChanged, this, &VideoPlayerView::videoTracksChanged);
+    connect(m_session, &MpvPlayerSession::videoIdChanged, this, &VideoPlayerView::videoIdChanged);
+    connect(m_session, &MpvPlayerSession::subtitleTracksChanged, this, &VideoPlayerView::subtitleTracksChanged);
+    connect(m_session, &MpvPlayerSession::subtitleIdChanged, this, &VideoPlayerView::subtitleIdChanged);
+    connect(m_session, &MpvPlayerSession::consoleOpenChanged, this, &VideoPlayerView::consoleOpenChanged);
 }
 
-MpvPlayerView::~MpvPlayerView()
+VideoPlayerView::~VideoPlayerView()
 {
     detachFromWindow();
 }
 
-bool MpvPlayerView::isPlaying() const
+bool VideoPlayerView::isPlaying() const
 {
     return m_session->isPlaying();
 }
 
-double MpvPlayerView::timePos() const
+double VideoPlayerView::timePos() const
 {
     return m_session->timePos();
 }
 
-double MpvPlayerView::duration() const
+double VideoPlayerView::duration() const
 {
     return m_session->duration();
 }
 
-double MpvPlayerView::bufferDuration() const
+double VideoPlayerView::bufferDuration() const
 {
     return m_session->bufferDuration();
 }
 
-double MpvPlayerView::bufferEnd() const
+double VideoPlayerView::bufferEnd() const
 {
     return m_session->bufferEnd();
 }
 
-qint64 MpvPlayerView::networkSpeed() const
+qint64 VideoPlayerView::networkSpeed() const
 {
     return m_session->networkSpeed();
 }
 
-bool MpvPlayerView::loading() const
+bool VideoPlayerView::loading() const
 {
     return m_session->loading();
 }
 
-bool MpvPlayerView::buffering() const
+bool VideoPlayerView::buffering() const
 {
     return m_session->buffering();
 }
 
-bool MpvPlayerView::seeking() const
+bool VideoPlayerView::seeking() const
 {
     return m_session->seeking();
 }
 
-bool MpvPlayerView::hasMedia() const
+bool VideoPlayerView::hasMedia() const
 {
     return m_session->hasMedia();
 }
 
-double MpvPlayerView::bufferingProgress() const
+double VideoPlayerView::bufferingProgress() const
 {
     return m_session->bufferingProgress();
 }
 
-double MpvPlayerView::playbackSpeed() const
+double VideoPlayerView::playbackSpeed() const
 {
     return m_session->playbackSpeed();
 }
 
-double MpvPlayerView::volume() const
+double VideoPlayerView::volume() const
 {
     return m_session->volume();
 }
 
-QString MpvPlayerView::qualityLabel() const
+QString VideoPlayerView::qualityLabel() const
 {
     return m_session->qualityLabel();
 }
 
-QVariantList MpvPlayerView::videoTracks() const
+QVariantList VideoPlayerView::videoTracks() const
 {
     return m_session->videoTracks();
 }
 
-int MpvPlayerView::videoId() const
+int VideoPlayerView::videoId() const
 {
     return m_session->videoId();
 }
 
-QVariantList MpvPlayerView::subtitleTracks() const
+QVariantList VideoPlayerView::subtitleTracks() const
 {
     return m_session->subtitleTracks();
 }
 
-int MpvPlayerView::subtitleId() const
+int VideoPlayerView::subtitleId() const
 {
     return m_session->subtitleId();
 }
 
-bool MpvPlayerView::consoleOpen() const
+bool VideoPlayerView::consoleOpen() const
 {
     return m_session->consoleOpen();
 }
 
-QVariantList MpvPlayerView::playlistItems() const
+QVariantList VideoPlayerView::playlistItems() const
 {
     return m_playlistItems;
 }
 
-int MpvPlayerView::playlistIndex() const
+int VideoPlayerView::playlistIndex() const
 {
     return m_playlistIndex;
 }
 
-int MpvPlayerView::playlistCount() const
+int VideoPlayerView::playlistCount() const
 {
     return m_playlistItems.size();
 }
 
-bool MpvPlayerView::hasPlaylist() const
+bool VideoPlayerView::hasPlaylist() const
 {
     return !m_playlistItems.isEmpty();
 }
 
-void MpvPlayerView::loadFile(const QString &path)
+void VideoPlayerView::loadFile(const QString &path)
 {
     if (path.isEmpty())
     {
@@ -167,7 +167,7 @@ void MpvPlayerView::loadFile(const QString &path)
     loadMedia(path, QVariantList{});
 }
 
-void MpvPlayerView::loadMedia(const QString &path, const QVariantList &externalSubtitles)
+void VideoPlayerView::loadMedia(const QString &path, const QVariantList &externalSubtitles)
 {
     if (!m_renderContextReady)
     {
@@ -186,7 +186,7 @@ void MpvPlayerView::loadMedia(const QString &path, const QVariantList &externalS
     m_session->loadFile(path);
 }
 
-void MpvPlayerView::setPlaylistItems(const QVariantList &items)
+void VideoPlayerView::setPlaylistItems(const QVariantList &items)
 {
     if (m_playlistItems == items)
     {
@@ -206,12 +206,12 @@ void MpvPlayerView::setPlaylistItems(const QVariantList &items)
     setPlaylistIndexInternal(nextIndex);
 }
 
-void MpvPlayerView::playEpisode(int index)
+void VideoPlayerView::playEpisode(int index)
 {
     loadEpisodeAtIndex(index);
 }
 
-void MpvPlayerView::playNextEpisode()
+void VideoPlayerView::playNextEpisode()
 {
     if (m_playlistItems.isEmpty())
     {
@@ -221,7 +221,7 @@ void MpvPlayerView::playNextEpisode()
     loadEpisodeAtIndex(m_playlistIndex + 1);
 }
 
-void MpvPlayerView::playPrevEpisode()
+void VideoPlayerView::playPrevEpisode()
 {
     if (m_playlistItems.isEmpty())
     {
@@ -231,62 +231,62 @@ void MpvPlayerView::playPrevEpisode()
     loadEpisodeAtIndex(m_playlistIndex - 1);
 }
 
-void MpvPlayerView::setStartupPosition(const QString &position)
+void VideoPlayerView::setStartupPosition(const QString &position)
 {
     m_session->setStartupPosition(position);
 }
 
-void MpvPlayerView::togglePause()
+void VideoPlayerView::togglePause()
 {
     m_session->togglePause();
 }
 
-void MpvPlayerView::seekRelative(double seconds)
+void VideoPlayerView::seekRelative(double seconds)
 {
     m_session->seekRelative(seconds);
 }
 
-void MpvPlayerView::seekTo(double seconds)
+void VideoPlayerView::seekTo(double seconds)
 {
     m_session->seekTo(seconds);
 }
 
-void MpvPlayerView::setPlaybackSpeed(double speed)
+void VideoPlayerView::setPlaybackSpeed(double speed)
 {
     m_session->setPlaybackSpeed(speed);
 }
 
-void MpvPlayerView::setVolume(double volume)
+void VideoPlayerView::setVolume(double volume)
 {
     m_session->setVolume(volume);
 }
 
-void MpvPlayerView::setVideoId(int id)
+void VideoPlayerView::setVideoId(int id)
 {
     m_session->setVideoId(id);
 }
 
-void MpvPlayerView::setSubtitleId(int id)
+void VideoPlayerView::setSubtitleId(int id)
 {
     m_session->setSubtitleId(id);
 }
 
-void MpvPlayerView::command(const QVariant &params)
+void VideoPlayerView::command(const QVariant &params)
 {
     m_session->command(params);
 }
 
-QVariant MpvPlayerView::getProperty(const QString &name)
+QVariant VideoPlayerView::getProperty(const QString &name)
 {
     return m_session->getProperty(name);
 }
 
-void MpvPlayerView::setProperty(const QString &name, const QVariant &value)
+void VideoPlayerView::setProperty(const QString &name, const QVariant &value)
 {
     m_session->setProperty(name, value);
 }
 
-void MpvPlayerView::handleWindowChanged(QQuickWindow *window)
+void VideoPlayerView::handleWindowChanged(QQuickWindow *window)
 {
     if (window == m_registeredWindow)
     {
@@ -297,7 +297,7 @@ void MpvPlayerView::handleWindowChanged(QQuickWindow *window)
     attachToWindow(qobject_cast<PlayerWindow *>(window));
 }
 
-void MpvPlayerView::markRenderContextReady()
+void VideoPlayerView::markRenderContextReady()
 {
     if (m_renderContextReady)
     {
@@ -308,7 +308,7 @@ void MpvPlayerView::markRenderContextReady()
     loadPendingFile();
 }
 
-void MpvPlayerView::loadPendingFile()
+void VideoPlayerView::loadPendingFile()
 {
     if (!m_renderContextReady || m_pendingFile.isEmpty())
     {
@@ -323,7 +323,7 @@ void MpvPlayerView::loadPendingFile()
     m_session->loadFile(pendingFile);
 }
 
-void MpvPlayerView::handlePlaybackFinished()
+void VideoPlayerView::handlePlaybackFinished()
 {
     if (m_playlistItems.isEmpty())
     {
@@ -333,7 +333,7 @@ void MpvPlayerView::handlePlaybackFinished()
     playNextEpisode();
 }
 
-QVariantMap MpvPlayerView::playlistItemAt(int index) const
+QVariantMap VideoPlayerView::playlistItemAt(int index) const
 {
     if (index < 0 || index >= m_playlistItems.size())
     {
@@ -343,7 +343,7 @@ QVariantMap MpvPlayerView::playlistItemAt(int index) const
     return m_playlistItems.at(index).toMap();
 }
 
-QVariantList MpvPlayerView::normalizedSubtitles(const QVariantList &subtitles) const
+QVariantList VideoPlayerView::normalizedSubtitles(const QVariantList &subtitles) const
 {
     QVariantList normalized;
     for (const QVariant &entry : subtitles)
@@ -369,7 +369,7 @@ QVariantList MpvPlayerView::normalizedSubtitles(const QVariantList &subtitles) c
     return normalized;
 }
 
-void MpvPlayerView::setPlaylistIndexInternal(int index)
+void VideoPlayerView::setPlaylistIndexInternal(int index)
 {
     const int normalizedIndex = (index >= 0 && index < m_playlistItems.size()) ? index : -1;
     if (m_playlistIndex == normalizedIndex)
@@ -381,7 +381,7 @@ void MpvPlayerView::setPlaylistIndexInternal(int index)
     emit playlistIndexChanged();
 }
 
-void MpvPlayerView::loadEpisodeAtIndex(int index)
+void VideoPlayerView::loadEpisodeAtIndex(int index)
 {
     const QVariantMap item = playlistItemAt(index);
     const QString path = item.value(QStringLiteral("url")).toString().trimmed();
@@ -394,12 +394,12 @@ void MpvPlayerView::loadEpisodeAtIndex(int index)
     loadMedia(path, normalizedSubtitles(item.value(QStringLiteral("subtitles")).toList()));
 }
 
-mpv_handle *MpvPlayerView::mpvHandle() const
+mpv_handle *VideoPlayerView::mpvHandle() const
 {
     return m_session->handle();
 }
 
-void MpvPlayerView::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
+void VideoPlayerView::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
     QQuickItem::geometryChange(newGeometry, oldGeometry);
 
@@ -414,7 +414,7 @@ void MpvPlayerView::geometryChange(const QRectF &newGeometry, const QRectF &oldG
     }
 }
 
-void MpvPlayerView::attachToWindow(PlayerWindow *window)
+void VideoPlayerView::attachToWindow(PlayerWindow *window)
 {
     if (!window)
     {
@@ -425,7 +425,7 @@ void MpvPlayerView::attachToWindow(PlayerWindow *window)
     m_registeredWindow->setVideoView(this);
 }
 
-void MpvPlayerView::detachFromWindow()
+void VideoPlayerView::detachFromWindow()
 {
     if (!m_registeredWindow)
     {

@@ -43,7 +43,7 @@ void PlayerWindow::openSystemFileDialog()
     emit fileSelected(path);
 }
 
-void PlayerWindow::setVideoView(MpvPlayerView *view)
+void PlayerWindow::setVideoView(VideoPlayerView *view)
 {
     if (m_videoView == view)
     {
@@ -55,7 +55,7 @@ void PlayerWindow::setVideoView(MpvPlayerView *view)
     update();
 }
 
-void PlayerWindow::clearVideoView(MpvPlayerView *view)
+void PlayerWindow::clearVideoView(VideoPlayerView *view)
 {
     if (m_videoView != view)
     {

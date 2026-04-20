@@ -1,5 +1,5 @@
 #include "src/app/playerwindow.h"
-#include "src/player/mpvplayerview.h"
+#include "src/player/videoplayerview.h"
 
 #include <clocale>
 #include <cstdio>
@@ -508,7 +508,7 @@ int main(int argc, char **argv)
 
         std::setlocale(LC_NUMERIC, "C");
 
-        qmlRegisterType<MpvPlayerView>("mpvtest", 1, 0, "MpvPlayerView");
+        qmlRegisterType<VideoPlayerView>("LzcPlayer", 1, 0, "VideoPlayerView");
 
         PlayerWindow view;
         QObject::connect(&view, &QQuickView::statusChanged, &view, [&view](QQuickView::Status status) {

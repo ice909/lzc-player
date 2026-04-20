@@ -8,7 +8,7 @@ import "../utils/PlayerFormat.js" as PlayerFormat
 Rectangle {
     id: controlsBar
 
-    required property var renderer
+    required property var player
     required property var hostWindow
     required property bool controlsVisible
     required property var playbackSpeedOptions
@@ -63,7 +63,7 @@ Rectangle {
         anchors.rightMargin: 10
         anchors.bottom: parent.top
         height: 24
-        renderer: controlsBar.renderer
+        player: controlsBar.player
     }
 
     Item {
@@ -86,12 +86,12 @@ Rectangle {
 
                 ControlButton {
                     Layout.alignment: Qt.AlignVCenter
-                    iconSource: controlsBar.renderer.playing
+                    iconSource: controlsBar.player.playing
                         ? "qrc:/lzc-player/assets/icons/pause.svg"
                         : "qrc:/lzc-player/assets/icons/play.svg"
                     iconSize: 24
                     chromeless: true
-                    onClicked: controlsBar.renderer.togglePause()
+                    onClicked: controlsBar.player.togglePause()
                 }
 
                 ControlButton {
@@ -99,7 +99,7 @@ Rectangle {
                     iconSource: "qrc:/lzc-player/assets/icons/seek-backward.svg"
                     iconSize: 20
                     chromeless: true
-                    onClicked: controlsBar.renderer.seekRelative(-10)
+                    onClicked: controlsBar.player.seekRelative(-10)
                 }
 
                 ControlButton {
@@ -107,17 +107,17 @@ Rectangle {
                     iconSource: "qrc:/lzc-player/assets/icons/seek-forward.svg"
                     iconSize: 20
                     chromeless: true
-                    onClicked: controlsBar.renderer.seekRelative(10)
+                    onClicked: controlsBar.player.seekRelative(10)
                 }
 
                 ControlButton {
                     Layout.alignment: Qt.AlignVCenter
-                    visible: controlsBar.renderer.hasPlaylist
-                    enabled: controlsBar.renderer.hasPlaylist
+                    visible: controlsBar.player.hasPlaylist
+                    enabled: controlsBar.player.hasPlaylist
                     iconSource: "qrc:/lzc-player/assets/icons/next-episode.svg"
                     iconSize: 20
                     chromeless: true
-                    onClicked: controlsBar.renderer.playNextEpisode()
+                    onClicked: controlsBar.player.playNextEpisode()
                 }
 
                 Text {
@@ -129,7 +129,7 @@ Rectangle {
                     text: "<span style='color:#FFFFFF;'>"
                         + PlayerFormat.formatTime(progressBar.shownValue)
                         + " / </span><span style='color:rgba(255,255,255,0.8);'>"
-                        + PlayerFormat.formatTime(controlsBar.renderer.duration)
+                        + PlayerFormat.formatTime(controlsBar.player.duration)
                         + "</span>"
                 }
             }
@@ -145,7 +145,7 @@ Rectangle {
                 PlaybackSpeedSelector {
                     id: speedSelector
                     Layout.alignment: Qt.AlignVCenter
-                    renderer: controlsBar.renderer
+                    player: controlsBar.player
                     playbackSpeedOptions: controlsBar.playbackSpeedOptions
                     reservedWidth: controlsBar.speedButtonReservedWidth
                 }
@@ -153,26 +153,26 @@ Rectangle {
                 EpisodeSelector {
                     id: episodeSelector
                     Layout.alignment: Qt.AlignVCenter
-                    renderer: controlsBar.renderer
+                    player: controlsBar.player
                 }
 
                 QualitySelector {
                     id: qualitySelector
                     Layout.alignment: Qt.AlignVCenter
-                    renderer: controlsBar.renderer
+                    player: controlsBar.player
                     reservedWidth: controlsBar.qualityButtonReservedWidth
                 }
 
                 SubtitleSelector {
                     id: subtitleSelector
                     Layout.alignment: Qt.AlignVCenter
-                    renderer: controlsBar.renderer
+                    player: controlsBar.player
                 }
 
                 VolumeSelector {
                     id: volumeSelector
                     Layout.alignment: Qt.AlignVCenter
-                    renderer: controlsBar.renderer
+                    player: controlsBar.player
                 }
 
                 ControlButton {

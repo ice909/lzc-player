@@ -3,14 +3,14 @@ import QtQuick
 Item {
     id: progressBar
 
-    required property var renderer
+    required property var player
     property bool dragging: false
     property bool awaitingSeek: false
     property real previewValue: 0
-    readonly property real maxValue: Math.max(renderer.duration, 0.001)
-    readonly property real shownValue: dragging || awaitingSeek ? previewValue : renderer.timePos
+    readonly property real maxValue: Math.max(player.duration, 0.001)
+    readonly property real shownValue: dragging || awaitingSeek ? previewValue : player.timePos
     readonly property real progress: Math.max(0, Math.min(1, shownValue / maxValue))
-    readonly property real bufferProgress: Math.max(0, Math.min(1, renderer.bufferEnd / maxValue))
+    readonly property real bufferProgress: Math.max(0, Math.min(1, player.bufferEnd / maxValue))
     readonly property bool hovered: progressHoverHandler.hovered || dragging
     readonly property real trackHeight: hovered ? 6 : 3
 
@@ -84,7 +84,7 @@ Item {
         onReleased: (mouse) => {
             progressBar.updateFromPosition(mouse.x)
             progressBar.awaitingSeek = true
-            renderer.seekTo(progressBar.previewValue)
+            player.seekTo(progressBar.previewValue)
             progressBar.dragging = false
         }
 
@@ -95,12 +95,12 @@ Item {
     }
 
     Connections {
-        target: renderer
+        target: player
 
         function onTimePosChanged() {
             if (
                 progressBar.awaitingSeek
-                && Math.abs(renderer.timePos - progressBar.previewValue) <= 0.5
+                && Math.abs(player.timePos - progressBar.previewValue) <= 0.5
             ) {
                 progressBar.awaitingSeek = false
             }

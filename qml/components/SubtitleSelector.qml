@@ -4,7 +4,7 @@ import QtQuick.Controls
 Item {
     id: subtitleSelector
 
-    required property var renderer
+    required property var player
     readonly property bool panelVisible: subtitlePopup.visible
     readonly property real popupEdgePadding: 12
 
@@ -94,12 +94,12 @@ Item {
                     spacing: 4
 
                     Repeater {
-                        model: subtitleSelector.renderer.subtitleTracks
+                        model: subtitleSelector.player.subtitleTracks
 
                         delegate: Rectangle {
                             id: subtitleOption
                             required property var modelData
-                            readonly property bool selected: subtitleSelector.renderer.subtitleId === modelData.id
+                            readonly property bool selected: subtitleSelector.player.subtitleId === modelData.id
                             readonly property bool offOption: modelData.id === 0
 
                             width: parent ? parent.width : 208
@@ -142,7 +142,7 @@ Item {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
-                                    subtitleSelector.renderer.setSubtitleId(subtitleOption.modelData.id)
+                                    subtitleSelector.player.setSubtitleId(subtitleOption.modelData.id)
                                     subtitlePopup.close()
                                 }
                             }

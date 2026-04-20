@@ -4,11 +4,11 @@ import QtQuick.Controls
 Item {
     id: episodeSelector
 
-    required property var renderer
+    required property var player
     readonly property bool panelVisible: episodePopup.visible
     readonly property real popupEdgePadding: 12
 
-    visible: renderer.hasPlaylist
+    visible: player.hasPlaylist
     implicitWidth: visible ? 40 : 0
     implicitHeight: Math.max(24, episodeButtonLabel.implicitHeight)
 
@@ -81,7 +81,7 @@ Item {
 
                 Text {
                     anchors.right: parent.right
-                    text: "共 " + episodeSelector.renderer.playlistCount + " 集"
+                    text: "共 " + episodeSelector.player.playlistCount + " 集"
                     color: Qt.rgba(203 / 255, 213 / 255, 224 / 255, 0.75)
                     font.pixelSize: 12
                     font.weight: Font.Medium
@@ -106,13 +106,13 @@ Item {
                     spacing: 4
 
                     Repeater {
-                        model: episodeSelector.renderer.playlistItems
+                        model: episodeSelector.player.playlistItems
 
                         delegate: Rectangle {
                             id: episodeOption
                             required property var modelData
                             required property int index
-                            readonly property bool selected: episodeSelector.renderer.playlistIndex === index
+                            readonly property bool selected: episodeSelector.player.playlistIndex === index
                             readonly property string episodeName: modelData.name || ("第 " + String(index + 1) + " 集")
                             readonly property string durationText:
                                 modelData.duration > 0
@@ -158,7 +158,7 @@ Item {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
-                                    episodeSelector.renderer.playEpisode(episodeOption.index)
+                                    episodeSelector.player.playEpisode(episodeOption.index)
                                     episodePopup.close()
                                 }
                             }
