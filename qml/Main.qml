@@ -5,7 +5,6 @@ import QtQuick.Layouts
 import QtQml
 
 import "components"
-import "utils/PlayerFormat.js" as PlayerFormat
 
 import LzcPlayer 1.0
 
@@ -216,44 +215,6 @@ Item {
                     ctx.arc(width / 2, height / 2, diameter / 2, startAngle, endAngle, false)
                     ctx.stroke()
                 }
-            }
-        }
-    }
-
-    Rectangle {
-        visible: videoPlayer.hasMedia
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.topMargin: 18
-        anchors.rightMargin: 18
-        radius: 14
-        color: "#B8141924"
-        border.width: 1
-        border.color: "#39445F"
-        z: 2
-
-        implicitWidth: speedInfoRow.implicitWidth + 24
-        implicitHeight: speedInfoRow.implicitHeight + 16
-
-        Row {
-            id: speedInfoRow
-            anchors.centerIn: parent
-            spacing: 8
-
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 8
-                height: 8
-                radius: 4
-                color: videoPlayer.networkSpeed > 0 ? "#7EA8FF" : "#5A657F"
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: PlayerFormat.formatNetworkSpeed(videoPlayer.networkSpeed)
-                color: "#F3F6FF"
-                font.pixelSize: 13
-                font.weight: Font.Medium
             }
         }
     }

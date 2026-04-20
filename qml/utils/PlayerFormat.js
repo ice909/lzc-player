@@ -17,20 +17,6 @@ function formatTime(seconds) {
     return pad(minutes) + ":" + pad(secs)
 }
 
-function formatNetworkSpeed(bytesPerSecond) {
-    const speed = Math.max(0, Number(bytesPerSecond) || 0)
-
-    if (speed >= 1024 * 1024) {
-        return (speed / (1024 * 1024)).toFixed(2) + " MB/s"
-    }
-
-    if (speed >= 1024) {
-        return (speed / 1024).toFixed(1) + " KB/s"
-    }
-
-    return Math.round(speed) + " B/s"
-}
-
 function playbackSpeedMatches(currentSpeed, value) {
     return Math.abs((Number(currentSpeed) || 1.0) - value) < 0.001
 }

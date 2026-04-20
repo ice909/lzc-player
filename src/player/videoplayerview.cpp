@@ -21,7 +21,6 @@ VideoPlayerView::VideoPlayerView(QQuickItem *parent)
     connect(m_session, &MpvPlayerSession::durationChanged, this, &VideoPlayerView::durationChanged);
     connect(m_session, &MpvPlayerSession::bufferDurationChanged, this, &VideoPlayerView::bufferDurationChanged);
     connect(m_session, &MpvPlayerSession::bufferEndChanged, this, &VideoPlayerView::bufferEndChanged);
-    connect(m_session, &MpvPlayerSession::networkSpeedChanged, this, &VideoPlayerView::networkSpeedChanged);
     connect(m_session, &MpvPlayerSession::loadingChanged, this, &VideoPlayerView::loadingChanged);
     connect(m_session, &MpvPlayerSession::bufferingChanged, this, &VideoPlayerView::bufferingChanged);
     connect(m_session, &MpvPlayerSession::seekingChanged, this, &VideoPlayerView::seekingChanged);
@@ -65,11 +64,6 @@ double VideoPlayerView::bufferDuration() const
 double VideoPlayerView::bufferEnd() const
 {
     return m_session->bufferEnd();
-}
-
-qint64 VideoPlayerView::networkSpeed() const
-{
-    return m_session->networkSpeed();
 }
 
 bool VideoPlayerView::loading() const

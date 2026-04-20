@@ -20,7 +20,6 @@ class VideoPlayerView : public QQuickItem
     Q_PROPERTY(double duration READ duration NOTIFY durationChanged)
     Q_PROPERTY(double bufferDuration READ bufferDuration NOTIFY bufferDurationChanged)
     Q_PROPERTY(double bufferEnd READ bufferEnd NOTIFY bufferEndChanged)
-    Q_PROPERTY(qint64 networkSpeed READ networkSpeed NOTIFY networkSpeedChanged)
     Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
     Q_PROPERTY(bool buffering READ buffering NOTIFY bufferingChanged)
     Q_PROPERTY(bool seeking READ seeking NOTIFY seekingChanged)
@@ -51,7 +50,6 @@ public:
     double duration() const;
     double bufferDuration() const;
     double bufferEnd() const;
-    qint64 networkSpeed() const;
     bool loading() const;
     bool buffering() const;
     bool seeking() const;
@@ -94,7 +92,6 @@ signals:
     void durationChanged();
     void bufferDurationChanged();
     void bufferEndChanged();
-    void networkSpeedChanged();
     void loadingChanged();
     void bufferingChanged();
     void seekingChanged();

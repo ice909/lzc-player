@@ -80,7 +80,6 @@ MpvPlayerSession::MpvPlayerSession(QObject *parent)
       m_duration(0.0),
       m_bufferDuration(0.0),
       m_bufferEnd(0.0),
-      m_networkSpeed(0),
       m_loading(false),
       m_fileLoading(false),
       m_buffering(false),
@@ -155,11 +154,6 @@ double MpvPlayerSession::bufferDuration() const
 double MpvPlayerSession::bufferEnd() const
 {
     return m_bufferEnd;
-}
-
-qint64 MpvPlayerSession::networkSpeed() const
-{
-    return m_networkSpeed;
 }
 
 bool MpvPlayerSession::loading() const
@@ -394,7 +388,6 @@ void MpvPlayerSession::observeProperties()
     mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "demuxer-cache-duration", MPV_FORMAT_DOUBLE);
-    mpv_observe_property(mpv, 0, "cache-speed", MPV_FORMAT_INT64);
     mpv_observe_property(mpv, 0, "paused-for-cache", MPV_FORMAT_FLAG);
     mpv_observe_property(mpv, 0, "seeking", MPV_FORMAT_FLAG);
     mpv_observe_property(mpv, 0, "cache-buffering-state", MPV_FORMAT_DOUBLE);
@@ -454,19 +447,6 @@ void MpvPlayerSession::handlePropertyChange(const mpv_event_property &property)
         else
         {
             setBufferDuration(0.0);
-        }
-        return;
-    }
-
-    if (qstrcmp(property.name, "cache-speed") == 0)
-    {
-        if (property.format == MPV_FORMAT_INT64 && property.data)
-        {
-            setNetworkSpeed(static_cast<qint64>(*static_cast<int64_t *>(property.data)));
-        }
-        else
-        {
-            setNetworkSpeed(0);
         }
         return;
     }
@@ -885,17 +865,6 @@ void MpvPlayerSession::setBufferEnd(double seconds)
 
     m_bufferEnd = safeSeconds;
     emit bufferEndChanged();
-}
-
-void MpvPlayerSession::setNetworkSpeed(qint64 bytesPerSecond)
-{
-    if (m_networkSpeed == bytesPerSecond)
-    {
-        return;
-    }
-
-    m_networkSpeed = qMax<qint64>(0, bytesPerSecond);
-    emit networkSpeedChanged();
 }
 
 void MpvPlayerSession::setLoading(bool loading)
