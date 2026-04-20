@@ -1,13 +1,14 @@
+#include "src/app/playerwindow.h"
 #include "src/player/mpvplayerview.h"
 
 #include <clocale>
 #include <initializer_list>
 
+#include <QApplication>
 #include <QColor>
 #include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QFile>
-#include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
@@ -161,7 +162,7 @@ int main(int argc, char **argv)
     }
 
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
     setApplicationMetadata();
 
     QCommandLineParser parser;
@@ -181,9 +182,10 @@ int main(int argc, char **argv)
 
     qmlRegisterType<MpvPlayerView>("mpvtest", 1, 0, "MpvPlayerView");
 
-    QQuickView view;
+    PlayerWindow view;
     view.setColor(QColor(QStringLiteral("#000000")));
     view.setResizeMode(QQuickView::SizeRootObjectToView);
+    view.rootContext()->setContextProperty("playerWindow", &view);
     view.rootContext()->setContextProperty("initialFile", startupFile);
     view.rootContext()->setContextProperty("initialPlaylist", startupPlaylist);
     view.rootContext()->setContextProperty("initialStartPosition", startupPosition);

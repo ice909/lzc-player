@@ -4,8 +4,13 @@
 .codex
 build
 build-*
+dist
+third_party
 output
 output-test
 *.AppImage
 *.zsync
 CMakeLists.txt.user*
+*.deb
+*.7z
+*.zip

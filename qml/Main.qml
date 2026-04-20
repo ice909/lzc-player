@@ -32,6 +32,11 @@ Item {
     readonly property real qualityButtonReservedWidth:
         Math.ceil(Math.max(qualityDefaultTextMetrics.advanceWidth, qualityMaxTextMetrics.advanceWidth)) + 16
     readonly property bool overlayOpen: controlsBar.overlayOpen
+    readonly property bool startupHasSource:
+        (initialPlaylist && initialPlaylist.length > 0) || !!initialFile
+    property bool entryConsumed: startupHasSource
+    readonly property bool emptyStateVisible:
+        !entryConsumed && !renderer.hasMedia && !renderer.loading
 
     function syncControlsVisibility() {
         if (!renderer.hasMedia) {
@@ -78,6 +83,22 @@ Item {
         }
 
         mainView.forceActiveFocus(Qt.OtherFocusReason)
+    }
+
+    function openSelectedFile(path) {
+        if (path === undefined || path === null) {
+            return
+        }
+
+        const resolvedPath = path.toString().trim()
+        if (!resolvedPath) {
+            return
+        }
+
+        entryConsumed = true
+        renderer.setPlaylistItems([])
+        renderer.loadFile(resolvedPath)
+        ensureKeyboardFocus()
     }
 
     TextMetrics {
@@ -199,6 +220,7 @@ Item {
     }
 
     Rectangle {
+        visible: renderer.hasMedia
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.topMargin: 18
@@ -231,6 +253,55 @@ Item {
                 color: "#F3F6FF"
                 font.pixelSize: 13
                 font.weight: Font.Medium
+            }
+        }
+    }
+
+    Item {
+        anchors.fill: parent
+        z: 2
+        visible: mainView.emptyStateVisible || playerWindow.dropActive
+
+        Rectangle {
+            anchors.fill: parent
+            color: playerWindow.dropActive ? "#261B4ED8" : "transparent"
+            border.width: playerWindow.dropActive ? 2 : 0
+            border.color: "#6EA1FF"
+        }
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 16
+
+            Button {
+                id: openFileButton
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "选择文件"
+                onClicked: playerWindow.openSystemFileDialog()
+
+                background: Rectangle {
+                    radius: 16
+                    color: openFileButton.down ? "#3D6ED8" : openFileButton.hovered ? "#5B89EC" : "#4E79E6"
+                    implicitWidth: 192
+                    implicitHeight: 54
+                }
+
+                contentItem: Text {
+                    text: openFileButton.text
+                    color: "#F7FAFF"
+                    font.pixelSize: 18
+                    font.weight: Font.DemiBold
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: playerWindow.dropActive ? "松开即可开始播放" : "拖拽文件进来去播放"
+                color: "#C2CAE0"
+                font.pixelSize: 16
+                horizontalAlignment: Text.AlignHCenter
             }
         }
     }
@@ -292,6 +363,18 @@ Item {
             if (renderer.consoleOpen) {
                 mainView.ensureKeyboardFocus()
             }
+        }
+    }
+
+    Connections {
+        target: playerWindow
+
+        function onFileSelected(path) {
+            mainView.openSelectedFile(path)
+        }
+
+        function onFileDropped(path) {
+            mainView.openSelectedFile(path)
         }
     }
 

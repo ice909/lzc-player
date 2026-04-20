@@ -86,6 +86,7 @@ output-test/
 squashfs-root
 dist/
 third_party/mpv/
+third_party/*.7z
 playlist.json
 *.deb
 *.build
