@@ -5,7 +5,7 @@ project(lzc-player VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick OpenGL Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick OpenGL Widgets Svg)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -198,6 +198,7 @@ target_link_libraries(lzc-player
         Qt6::Gui
         Qt6::OpenGL
         Qt6::Quick
+        Qt6::Svg
         Qt6::Widgets
 )
 
