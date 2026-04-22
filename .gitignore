@@ -96,3 +96,5 @@ debian/.debhelper/
 debian/debhelper-build-stamp
 debian/files
 debian/lzc-player/
+
+log.txt

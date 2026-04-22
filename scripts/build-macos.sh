@@ -190,6 +190,9 @@ if [[ "${RUN_MACDEPLOYQT}" != "0" ]]; then
 fi
 
 if [[ "${COPY_EXTRA_QT_RUNTIME}" != "0" ]]; then
+    copy_framework_if_missing "QtQuickLayouts.framework"
+    copy_framework_if_missing "QtQuickControls2Basic.framework"
+    copy_framework_if_missing "QtQuickControls2BasicStyleImpl.framework"
     copy_framework_if_missing "QtQuickControls2.framework"
     copy_framework_if_missing "QtQuickControls2Impl.framework"
     copy_framework_if_missing "QtQuickTemplates2.framework"
