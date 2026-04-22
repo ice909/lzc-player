@@ -28,9 +28,17 @@ foreach(search_dir IN LISTS SEARCH_DIRS)
 endforeach()
 
 set(valid_extra_libs "")
+set(bundle_frameworks_dir "${APP_BUNDLE}/Contents/Frameworks")
+file(MAKE_DIRECTORY "${bundle_frameworks_dir}")
+
 foreach(extra_lib IN LISTS EXTRA_LIBS)
     if (EXISTS "${extra_lib}")
-        list(APPEND valid_extra_libs "${extra_lib}")
+        get_filename_component(extra_lib_name "${extra_lib}" NAME)
+        set(bundled_extra_lib "${bundle_frameworks_dir}/${extra_lib_name}")
+        execute_process(
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${extra_lib}" "${bundled_extra_lib}"
+        )
+        list(APPEND valid_extra_libs "${bundled_extra_lib}")
     endif()
 endforeach()
 
