@@ -80,6 +80,7 @@ jobs:
             curl \
             file \
             g++ \
+            libgl1-mesa-dev \
             libmpv-dev \
             ninja-build \
             patchelf \
