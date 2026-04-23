@@ -188,6 +188,7 @@ void VideoPlayerView::setPlaylistItems(const QVariantList &items)
 
     const int previousCount = m_playlistItems.size();
     m_playlistItems = items;
+    m_playlistProgressByKey.clear();
     emit playlistItemsChanged();
 
     if (previousCount != m_playlistItems.size())
@@ -336,6 +337,63 @@ QVariantMap VideoPlayerView::playlistItemAt(int index) const
     return m_playlistItems.at(index).toMap();
 }
 
+QString VideoPlayerView::normalizedPlaylistIdentity(const QVariantMap &item) const
+{
+    const QString id = item.value(QStringLiteral("id")).toString().trimmed();
+    if (!id.isEmpty())
+    {
+        return id;
+    }
+
+    return item.value(QStringLiteral("url")).toString().trimmed();
+}
+
+QString VideoPlayerView::playlistProgressKey(const QVariantMap &item, int index) const
+{
+    const QString identity = normalizedPlaylistIdentity(item);
+    if (!identity.isEmpty())
+    {
+        return identity;
+    }
+
+    return QStringLiteral("#index:%1").arg(index);
+}
+
+void VideoPlayerView::persistCurrentEpisodeProgress()
+{
+    if (m_playlistIndex < 0 || m_playlistIndex >= m_playlistItems.size())
+    {
+        return;
+    }
+
+    const QVariantMap item = playlistItemAt(m_playlistIndex);
+    const QString key = playlistProgressKey(item, m_playlistIndex);
+    if (key.isEmpty())
+    {
+        return;
+    }
+
+    PlaylistProgressEntry entry;
+    entry.positionSeconds = timePos();
+    entry.durationSeconds = duration();
+    m_playlistProgressByKey.insert(key, entry);
+}
+
+QString VideoPlayerView::resolvedPlaylistStart(const QVariantMap &item, int index) const
+{
+    const QString key = playlistProgressKey(item, index);
+    if (!key.isEmpty())
+    {
+        const auto it = m_playlistProgressByKey.constFind(key);
+        if (it != m_playlistProgressByKey.constEnd() && it->positionSeconds > 0.0)
+        {
+            return QString::number(it->positionSeconds, 'f', 3);
+        }
+    }
+
+    return normalizedPlaylistStart(item);
+}
+
 QString VideoPlayerView::normalizedPlaylistStart(const QVariantMap &item) const
 {
     const QVariant start = item.value(QStringLiteral("start"));
@@ -408,8 +466,9 @@ void VideoPlayerView::loadEpisodeAtIndex(int index)
         return;
     }
 
+    persistCurrentEpisodeProgress();
     setPlaylistIndexInternal(index);
-    m_session->setStartupPosition(normalizedPlaylistStart(item));
+    m_session->setStartupPosition(resolvedPlaylistStart(item, index));
     loadMedia(path, normalizedSubtitles(item.value(QStringLiteral("subtitles")).toList()));
 }
 

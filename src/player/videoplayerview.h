@@ -4,6 +4,7 @@
 #include <QtQuick/QQuickItem>
 #include <mpv/client.h>
 
+#include <QHash>
 #include <QString>
 #include <QStringList>
 #include <QVariant>
@@ -116,10 +117,20 @@ private slots:
     void performWindowUpdate();
 
 private:
+    struct PlaylistProgressEntry
+    {
+        double positionSeconds = 0.0;
+        double durationSeconds = 0.0;
+    };
+
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
     void scheduleWindowUpdate();
     void loadMedia(const QString &path, const QVariantList &externalSubtitles);
     QVariantMap playlistItemAt(int index) const;
+    QString normalizedPlaylistIdentity(const QVariantMap &item) const;
+    QString playlistProgressKey(const QVariantMap &item, int index) const;
+    void persistCurrentEpisodeProgress();
+    QString resolvedPlaylistStart(const QVariantMap &item, int index) const;
     QString normalizedPlaylistStart(const QVariantMap &item) const;
     QVariantList normalizedSubtitles(const QVariantList &subtitles) const;
     void setPlaylistIndexInternal(int index);
@@ -134,6 +145,7 @@ private:
     bool m_renderContextReady;
     bool m_windowUpdateScheduled;
     QVariantList m_playlistItems;
+    QHash<QString, PlaylistProgressEntry> m_playlistProgressByKey;
     int m_playlistIndex;
 };
 
