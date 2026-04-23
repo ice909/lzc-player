@@ -95,7 +95,7 @@ jobs:
           python3 -m pip install --user --no-cache-dir aqtinstall
           python3 -m aqt install-qt linux desktop "${QT_VERSION}" linux_gcc_64 \
             -O "${RUNNER_TEMP}/Qt" \
-            -m qtshadertools qtsvg
+            -m qtshadertools
           echo "QT_ROOT=${RUNNER_TEMP}/Qt/${QT_VERSION}/gcc_64" >> "${GITHUB_ENV}"
 
       - name: Install AppImage tools
