@@ -252,6 +252,7 @@ QML 以 `qml/Main.qml` 为根页面，负责：
 ```json
 {
   "url": "https://example.com/video.mp4",
+  "start": "12:34",
   "subtitles": []
 }
 ```
@@ -259,9 +260,12 @@ QML 以 `qml/Main.qml` 为根页面，负责：
 其中：
 
 - `url`：当前集媒体地址，不能为空。
+- `start`：可选，当前集起播位置。支持秒数、`mm:ss`、`hh:mm:ss`、百分比字符串，与 `--start` 格式一致。
 - `subtitles`：可选，外挂字幕列表。
 
 `EpisodeSelector.qml` 直接把 `playlistItems` 作为模型使用，因此业务侧如果希望在 UI 中展示标题、集数等信息，可以继续在对象中附带其他字段，QML 组件会按当前实现自行读取。
+
+播放列表项的 `start` 优先级高于全局 `--start`。当某一集未提供 `start` 时，不会继承上一集的起播位置。
 
 ### 7.2 外挂字幕项
 

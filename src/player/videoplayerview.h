@@ -120,6 +120,7 @@ private:
     void scheduleWindowUpdate();
     void loadMedia(const QString &path, const QVariantList &externalSubtitles);
     QVariantMap playlistItemAt(int index) const;
+    QString normalizedPlaylistStart(const QVariantMap &item) const;
     QVariantList normalizedSubtitles(const QVariantList &subtitles) const;
     void setPlaylistIndexInternal(int index);
     void loadEpisodeAtIndex(int index);

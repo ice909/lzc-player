@@ -336,6 +336,31 @@ QVariantMap VideoPlayerView::playlistItemAt(int index) const
     return m_playlistItems.at(index).toMap();
 }
 
+QString VideoPlayerView::normalizedPlaylistStart(const QVariantMap &item) const
+{
+    const QVariant start = item.value(QStringLiteral("start"));
+    if (!start.isValid() || start.isNull())
+    {
+        return {};
+    }
+
+    switch (start.typeId())
+    {
+    case QMetaType::QString:
+        return start.toString().trimmed();
+    case QMetaType::Int:
+    case QMetaType::UInt:
+    case QMetaType::LongLong:
+    case QMetaType::ULongLong:
+    case QMetaType::Double:
+    case QMetaType::Float:
+    case QMetaType::Bool:
+        return start.toString().trimmed();
+    default:
+        return {};
+    }
+}
+
 QVariantList VideoPlayerView::normalizedSubtitles(const QVariantList &subtitles) const
 {
     QVariantList normalized;
@@ -384,6 +409,7 @@ void VideoPlayerView::loadEpisodeAtIndex(int index)
     }
 
     setPlaylistIndexInternal(index);
+    m_session->setStartupPosition(normalizedPlaylistStart(item));
     loadMedia(path, normalizedSubtitles(item.value(QStringLiteral("subtitles")).toList()));
 }
 
