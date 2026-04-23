@@ -13,6 +13,13 @@ Item {
     readonly property real bufferProgress: Math.max(0, Math.min(1, player.bufferEnd / maxValue))
     readonly property bool hovered: progressHoverHandler.hovered || dragging
     readonly property real trackHeight: hovered ? 6 : 3
+    readonly property real handleDiameter: 12
+    readonly property real playedPixels: progressTrack.width * progress
+    readonly property real playedPixelsSnapped: Math.round(playedPixels)
+    readonly property real filledPixels: Math.max(
+        0,
+        Math.min(progressTrack.width, playedPixelsSnapped + (hovered && progress > 0 ? 1 : 0))
+    )
 
     function updateFromPosition(positionX) {
         const ratio = Math.max(0, Math.min(1, positionX / width))
@@ -37,7 +44,7 @@ Item {
         }
 
         Rectangle {
-            width: parent.width * progressBar.progress
+            width: progressBar.filledPixels
             height: parent.height
             radius: parent.radius
             color: "#3374DB"
@@ -52,11 +59,19 @@ Item {
     }
 
     Rectangle {
-        x: progressBar.progress * (progressBar.width - width)
+        x: Math.round(
+            Math.max(
+                0,
+                Math.min(
+                    progressBar.width - width,
+                    progressTrack.x + progressBar.playedPixelsSnapped - width / 2
+                )
+            )
+        )
         anchors.verticalCenter: parent.verticalCenter
         visible: progressBar.hovered
-        width: 12
-        height: 12
+        width: progressBar.handleDiameter
+        height: progressBar.handleDiameter
         radius: 6
         color: "#FFFFFF"
     }
@@ -69,6 +84,7 @@ Item {
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
 
         onPressed: (mouse) => {
             progressBar.dragging = true
