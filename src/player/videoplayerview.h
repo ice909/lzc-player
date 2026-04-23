@@ -68,6 +68,8 @@ public:
     int playlistIndex() const;
     int playlistCount() const;
     bool hasPlaylist() const;
+    QString currentSourceUrl() const;
+    QVariantMap currentEpisodePayload() const;
 
 public slots:
     void loadFile(const QString &path);
@@ -109,6 +111,7 @@ signals:
     void playlistItemsChanged();
     void playlistIndexChanged();
     void playlistCountChanged();
+    void episodeSwitched(const QVariantMap &payload);
 
 private slots:
     void handleWindowChanged(QQuickWindow *window);
@@ -130,11 +133,14 @@ private:
     QString normalizedPlaylistIdentity(const QVariantMap &item) const;
     QString playlistProgressKey(const QVariantMap &item, int index) const;
     void persistCurrentEpisodeProgress();
+    QVariantMap episodePayloadForItem(const QVariantMap &item, int index) const;
+    QVariantMap currentEpisodeProgressPayload() const;
+    QString currentEpisodeDisplayName(const QVariantMap &item, int index) const;
     QString resolvedPlaylistStart(const QVariantMap &item, int index) const;
     QString normalizedPlaylistStart(const QVariantMap &item) const;
     QVariantList normalizedSubtitles(const QVariantList &subtitles) const;
     void setPlaylistIndexInternal(int index);
-    void loadEpisodeAtIndex(int index);
+    void loadEpisodeAtIndex(int index, const QString &reason);
     void attachToWindow(PlayerWindow *window);
     void detachFromWindow();
 
@@ -142,6 +148,7 @@ private:
     PlayerWindow *m_registeredWindow;
     QString m_pendingFile;
     QVariantList m_pendingExternalSubtitles;
+    QString m_currentSourceUrl;
     bool m_renderContextReady;
     bool m_windowUpdateScheduled;
     QVariantList m_playlistItems;

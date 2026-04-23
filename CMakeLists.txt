@@ -5,7 +5,7 @@ project(lzc-player VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick OpenGL Widgets Svg)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick OpenGL Widgets Svg Network)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -145,6 +145,8 @@ qt_add_executable(lzc-player
     src/app/main.cpp
     src/app/playerwindow.cpp
     src/app/playerwindow.h
+    src/app/playeripcserver.cpp
+    src/app/playeripcserver.h
     src/player/videoplayerview.cpp
     src/player/videoplayerview.h
     src/player/mpvwindowrenderer.cpp
@@ -196,6 +198,7 @@ target_link_libraries(lzc-player
         ${mpv_target}
         Qt6::Core
         Qt6::Gui
+        Qt6::Network
         Qt6::OpenGL
         Qt6::Quick
         Qt6::Svg

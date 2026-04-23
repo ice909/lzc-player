@@ -1,4 +1,5 @@
 #include "src/app/playerwindow.h"
+#include "src/app/playeripcserver.h"
 #include "src/player/videoplayerview.h"
 
 #include <clocale>
@@ -42,7 +43,7 @@ struct StartupOptions
     QVariantList playlist;
     QString start;
     QString cookie;
-    QString inputIpcServer;
+    QString playerIpcServer;
 };
 
 void setApplicationMetadata()
@@ -181,9 +182,9 @@ void configureCommandLineParser(QCommandLineParser &parser)
         QStringLiteral("start"),
         QStringLiteral("Seek to given position on startup. Supports percent, seconds, or timestamps like 12:34 and 01:02:03."),
         QStringLiteral("time"));
-    const QCommandLineOption inputIpcServerOption(
-        QStringLiteral("input-ipc-server"),
-        QStringLiteral("Path to the mpv JSON IPC server socket."),
+    const QCommandLineOption playerIpcServerOption(
+        QStringLiteral("player-ipc-server"),
+        QStringLiteral("Path to the player event IPC server socket."),
         QStringLiteral("path"));
     const QCommandLineOption configFileOption(
         QStringList{QStringLiteral("f"), QStringLiteral("config-file")},
@@ -206,7 +207,7 @@ void configureCommandLineParser(QCommandLineParser &parser)
     parser.addOption(playlistFileOption);
     parser.addOption(playlistJsonOption);
     parser.addOption(startOption);
-    parser.addOption(inputIpcServerOption);
+    parser.addOption(playerIpcServerOption);
     parser.addPositionalArgument(QStringLiteral("file"), QStringLiteral("Media file or URL to open."));
 }
 
@@ -372,7 +373,7 @@ bool loadStartupOptionsFromConfigFile(const QString &fileName, StartupOptions *o
 
     readJsonString(object, {"start"}, &options->start);
     readJsonString(object, {"cookie"}, &options->cookie);
-    readJsonString(object, {"inputIpcServer", "input-ipc-server"}, &options->inputIpcServer);
+    readJsonString(object, {"playerIpcServer", "player-ipc-server"}, &options->playerIpcServer);
 
     QString playlistFileName;
     if (readJsonString(object, {"playlistFile", "playlist-file"}, &playlistFileName))
@@ -449,9 +450,9 @@ bool loadStartupOptionsFromParser(const QCommandLineParser &parser, StartupOptio
         options->cookie = parser.value(QStringLiteral("cookie"));
     }
 
-    if (parser.isSet(QStringLiteral("input-ipc-server")))
+    if (parser.isSet(QStringLiteral("player-ipc-server")))
     {
-        options->inputIpcServer = parser.value(QStringLiteral("input-ipc-server"));
+        options->playerIpcServer = parser.value(QStringLiteral("player-ipc-server"));
     }
 
     return true;
@@ -502,7 +503,7 @@ int main(int argc, char **argv)
 
         const QString startupFile = startupOptions.playlist.isEmpty() ? startupOptions.file : QString();
         app.setProperty("lzcPlayerCookie", startupOptions.cookie);
-        app.setProperty("lzcPlayerInputIpcServer", startupOptions.inputIpcServer);
+        app.setProperty("lzcPlayerIpcServer", startupOptions.playerIpcServer);
 
         std::setlocale(LC_NUMERIC, "C");
 
@@ -538,6 +539,65 @@ int main(int argc, char **argv)
         const QSize initialSize = view.initialSize().isValid() ? view.initialSize() : QSize(1280, 720);
         view.resize(initialSize);
         qInfo().noquote() << "Main window initial size:" << initialSize;
+
+        std::unique_ptr<PlayerIpcServer> ipcServer;
+        if (!startupOptions.playerIpcServer.trimmed().isEmpty())
+        {
+            ipcServer = std::make_unique<PlayerIpcServer>(startupOptions.playerIpcServer, &app);
+            if (!ipcServer->start())
+            {
+                showStartupFailureDialog(QStringLiteral("播放器 IPC 服务启动失败。"));
+                return 1;
+            }
+
+            auto *videoPlayer = view.rootObject() ? view.rootObject()->findChild<VideoPlayerView *>(QStringLiteral("videoPlayer")) : nullptr;
+            if (videoPlayer)
+            {
+                ipcServer->setVideoPlayer(videoPlayer);
+                QObject::connect(videoPlayer, &VideoPlayerView::playingChanged, ipcServer.get(), [ipc = ipcServer.get(), videoPlayer]() {
+                    ipc->broadcastEvent(QStringLiteral("playing"), videoPlayer->isPlaying());
+                    ipc->broadcastEvent(QStringLiteral("progress"), QVariantMap{
+                        {QStringLiteral("timePos"), videoPlayer->timePos()},
+                        {QStringLiteral("duration"), videoPlayer->duration()},
+                        {QStringLiteral("playing"), videoPlayer->isPlaying()},
+                    });
+                });
+                QObject::connect(videoPlayer, &VideoPlayerView::timePosChanged, ipcServer.get(), [ipc = ipcServer.get(), videoPlayer]() {
+                    ipc->broadcastEvent(QStringLiteral("progress"), QVariantMap{
+                        {QStringLiteral("timePos"), videoPlayer->timePos()},
+                        {QStringLiteral("duration"), videoPlayer->duration()},
+                        {QStringLiteral("playing"), videoPlayer->isPlaying()},
+                    });
+                });
+                QObject::connect(videoPlayer, &VideoPlayerView::durationChanged, ipcServer.get(), [ipc = ipcServer.get(), videoPlayer]() {
+                    ipc->broadcastEvent(QStringLiteral("progress"), QVariantMap{
+                        {QStringLiteral("timePos"), videoPlayer->timePos()},
+                        {QStringLiteral("duration"), videoPlayer->duration()},
+                        {QStringLiteral("playing"), videoPlayer->isPlaying()},
+                    });
+                });
+                QObject::connect(videoPlayer, &VideoPlayerView::playbackSpeedChanged, ipcServer.get(), [ipc = ipcServer.get(), videoPlayer]() {
+                    ipc->broadcastEvent(QStringLiteral("playbackSpeed"), videoPlayer->playbackSpeed());
+                });
+                QObject::connect(videoPlayer, &VideoPlayerView::volumeChanged, ipcServer.get(), [ipc = ipcServer.get(), videoPlayer]() {
+                    ipc->broadcastEvent(QStringLiteral("volume"), videoPlayer->volume());
+                });
+                QObject::connect(videoPlayer, &VideoPlayerView::subtitleIdChanged, ipcServer.get(), [ipc = ipcServer.get(), videoPlayer]() {
+                    ipc->broadcastEvent(QStringLiteral("subtitleId"), videoPlayer->subtitleId());
+                });
+                QObject::connect(videoPlayer, &VideoPlayerView::subtitleTracksChanged, ipcServer.get(), [ipc = ipcServer.get(), videoPlayer]() {
+                    ipc->broadcastEvent(QStringLiteral("subtitleTracks"), videoPlayer->subtitleTracks());
+                });
+                QObject::connect(videoPlayer, &VideoPlayerView::qualityLabelChanged, ipcServer.get(), [ipc = ipcServer.get(), videoPlayer]() {
+                    ipc->broadcastEvent(QStringLiteral("qualityLabel"), videoPlayer->qualityLabel());
+                });
+                QObject::connect(videoPlayer, &VideoPlayerView::episodeSwitched, ipcServer.get(), [ipc = ipcServer.get()](const QVariantMap &payload) {
+                    ipc->broadcastEvent(QStringLiteral("episode-switch"), payload);
+                });
+                QMetaObject::invokeMethod(ipcServer.get(), &PlayerIpcServer::emitProcessReady, Qt::QueuedConnection);
+            }
+        }
+
         view.show();
 
         return app.exec();

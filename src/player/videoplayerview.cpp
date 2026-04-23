@@ -153,6 +153,16 @@ bool VideoPlayerView::hasPlaylist() const
     return !m_playlistItems.isEmpty();
 }
 
+QString VideoPlayerView::currentSourceUrl() const
+{
+    return m_currentSourceUrl;
+}
+
+QVariantMap VideoPlayerView::currentEpisodePayload() const
+{
+    return episodePayloadForItem(playlistItemAt(m_playlistIndex), m_playlistIndex);
+}
+
 void VideoPlayerView::loadFile(const QString &path)
 {
     if (path.isEmpty())
@@ -165,6 +175,7 @@ void VideoPlayerView::loadFile(const QString &path)
 
 void VideoPlayerView::loadMedia(const QString &path, const QVariantList &externalSubtitles)
 {
+    m_currentSourceUrl = path;
     if (!m_renderContextReady)
     {
         m_pendingFile = path;
@@ -202,7 +213,7 @@ void VideoPlayerView::setPlaylistItems(const QVariantList &items)
 
 void VideoPlayerView::playEpisode(int index)
 {
-    loadEpisodeAtIndex(index);
+    loadEpisodeAtIndex(index, QStringLiteral("user"));
 }
 
 void VideoPlayerView::playNextEpisode()
@@ -212,7 +223,7 @@ void VideoPlayerView::playNextEpisode()
         return;
     }
 
-    loadEpisodeAtIndex(m_playlistIndex + 1);
+    loadEpisodeAtIndex(m_playlistIndex + 1, QStringLiteral("user"));
 }
 
 void VideoPlayerView::playPrevEpisode()
@@ -222,7 +233,7 @@ void VideoPlayerView::playPrevEpisode()
         return;
     }
 
-    loadEpisodeAtIndex(m_playlistIndex - 1);
+    loadEpisodeAtIndex(m_playlistIndex - 1, QStringLiteral("user"));
 }
 
 void VideoPlayerView::setStartupPosition(const QString &position)
@@ -311,6 +322,7 @@ void VideoPlayerView::loadPendingFile()
 
     const QString pendingFile = m_pendingFile;
     m_pendingFile.clear();
+    m_currentSourceUrl = pendingFile;
     const QVariantList pendingExternalSubtitles = m_pendingExternalSubtitles;
     m_pendingExternalSubtitles.clear();
     m_session->setExternalSubtitles(pendingExternalSubtitles);
@@ -324,7 +336,7 @@ void VideoPlayerView::handlePlaybackFinished()
         return;
     }
 
-    playNextEpisode();
+    loadEpisodeAtIndex(m_playlistIndex + 1, QStringLiteral("auto"));
 }
 
 QVariantMap VideoPlayerView::playlistItemAt(int index) const
@@ -377,6 +389,80 @@ void VideoPlayerView::persistCurrentEpisodeProgress()
     entry.positionSeconds = timePos();
     entry.durationSeconds = duration();
     m_playlistProgressByKey.insert(key, entry);
+}
+
+QString VideoPlayerView::currentEpisodeDisplayName(const QVariantMap &item, int index) const
+{
+    const QString name = item.value(QStringLiteral("name")).toString().trimmed();
+    if (!name.isEmpty())
+    {
+        return name;
+    }
+
+    if (index >= 0)
+    {
+        return QStringLiteral("第 %1 集").arg(index + 1);
+    }
+
+    return {};
+}
+
+QVariantMap VideoPlayerView::episodePayloadForItem(const QVariantMap &item, int index) const
+{
+    if (item.isEmpty())
+    {
+        return {};
+    }
+
+    QVariantMap payload{
+        {QStringLiteral("index"), index},
+        {QStringLiteral("url"), item.value(QStringLiteral("url")).toString().trimmed()},
+    };
+
+    const QString id = normalizedPlaylistIdentity(item);
+    if (!id.isEmpty())
+    {
+        payload.insert(QStringLiteral("id"), id);
+    }
+
+    const QString name = currentEpisodeDisplayName(item, index);
+    if (!name.isEmpty())
+    {
+        payload.insert(QStringLiteral("name"), name);
+    }
+
+    const QString start = resolvedPlaylistStart(item, index);
+    if (!start.isEmpty())
+    {
+        payload.insert(QStringLiteral("start"), start);
+    }
+
+    return payload;
+}
+
+QVariantMap VideoPlayerView::currentEpisodeProgressPayload() const
+{
+    if (m_playlistIndex < 0 || m_playlistIndex >= m_playlistItems.size())
+    {
+        return {};
+    }
+
+    const QVariantMap item = playlistItemAt(m_playlistIndex);
+    QVariantMap payload = episodePayloadForItem(item, m_playlistIndex);
+    const QString key = playlistProgressKey(item, m_playlistIndex);
+
+    PlaylistProgressEntry entry;
+    if (!key.isEmpty())
+    {
+        entry = m_playlistProgressByKey.value(key);
+    }
+
+    const double position = entry.positionSeconds > 0.0 ? entry.positionSeconds : timePos();
+    const double totalDuration = entry.durationSeconds > 0.0 ? entry.durationSeconds : duration();
+    payload.insert(QStringLiteral("position"), position);
+    payload.insert(QStringLiteral("duration"), totalDuration);
+    payload.insert(QStringLiteral("progress"), totalDuration > 0.0 ? position / totalDuration : 0.0);
+    return payload;
 }
 
 QString VideoPlayerView::resolvedPlaylistStart(const QVariantMap &item, int index) const
@@ -457,7 +543,7 @@ void VideoPlayerView::setPlaylistIndexInternal(int index)
     emit playlistIndexChanged();
 }
 
-void VideoPlayerView::loadEpisodeAtIndex(int index)
+void VideoPlayerView::loadEpisodeAtIndex(int index, const QString &reason)
 {
     const QVariantMap item = playlistItemAt(index);
     const QString path = item.value(QStringLiteral("url")).toString().trimmed();
@@ -466,9 +552,21 @@ void VideoPlayerView::loadEpisodeAtIndex(int index)
         return;
     }
 
+    QVariantMap previousEpisode = currentEpisodeProgressPayload();
     persistCurrentEpisodeProgress();
     setPlaylistIndexInternal(index);
-    m_session->setStartupPosition(resolvedPlaylistStart(item, index));
+    const QString start = resolvedPlaylistStart(item, index);
+    m_session->setStartupPosition(start);
+    QVariantMap nextEpisode = episodePayloadForItem(item, index);
+    if (!start.isEmpty())
+    {
+        nextEpisode.insert(QStringLiteral("start"), start);
+    }
+    emit episodeSwitched(QVariantMap{
+        {QStringLiteral("reason"), reason},
+        {QStringLiteral("from"), previousEpisode},
+        {QStringLiteral("to"), nextEpisode},
+    });
     loadMedia(path, normalizedSubtitles(item.value(QStringLiteral("subtitles")).toList()));
 }
 
