@@ -80,8 +80,23 @@ jobs:
             curl \
             file \
             g++ \
+            libfontconfig1 \
+            libfuse2 \
+            libgl1 \
             libgl1-mesa-dev \
             libmpv-dev \
+            libpulse0 \
+            libssl3 \
+            libvulkan1 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-xinerama0 \
+            libxcb-xkb1 \
+            libxkbcommon-x11-0 \
             ninja-build \
             patchelf \
             pkg-config \
